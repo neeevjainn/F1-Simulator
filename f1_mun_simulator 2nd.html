@@ -1,0 +1,1381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>F1 MUN — Race Control</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0a0f;
+  --bg2: #111118;
+  --bg3: #1a1a24;
+  --bg4: #22222f;
+  --surface: #16161f;
+  --border: rgba(255,255,255,0.07);
+  --border2: rgba(255,255,255,0.12);
+  --accent: #e8002d;
+  --accent2: #ff6b35;
+  --gold: #ffd700;
+  --silver: #c0c0c0;
+  --bronze: #cd7f32;
+  --green: #00d775;
+  --blue: #0090ff;
+  --text: #f0f0f5;
+  --text2: #9090aa;
+  --text3: #5a5a72;
+  --font-display: 'Orbitron', monospace;
+  --font-body: 'DM Sans', sans-serif;
+  --font-mono: 'DM Mono', monospace;
+  --r: 8px;
+  --r-lg: 14px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: var(--font-body); min-height: 100vh; overflow-x: hidden; }
+
+/* SCROLLBAR */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: var(--bg2); }
+::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 2px; }
+
+/* TOP NAV */
+.topnav {
+  display: flex; align-items: center; gap: 0; 
+  background: var(--bg2); border-bottom: 1px solid var(--border);
+  position: sticky; top: 0; z-index: 100;
+  padding: 0 24px;
+}
+.topnav-logo {
+  font-family: var(--font-display); font-size: 14px; font-weight: 700; letter-spacing: 0.1em;
+  color: var(--accent); padding: 16px 20px 16px 0; border-right: 1px solid var(--border);
+  margin-right: 4px;
+}
+.nav-tabs { display: flex; gap: 0; flex: 1; }
+.nav-tab {
+  padding: 16px 20px; font-size: 12px; font-weight: 500; letter-spacing: 0.06em;
+  text-transform: uppercase; cursor: pointer; color: var(--text3);
+  border-bottom: 2px solid transparent; transition: all 0.2s;
+  background: none; border-top: none; border-left: none; border-right: none;
+}
+.nav-tab:hover { color: var(--text2); }
+.nav-tab.active { color: var(--text); border-bottom-color: var(--accent); }
+.nav-right { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+.live-badge { display: flex; align-items: center; gap: 6px; font-size: 11px; font-family: var(--font-mono); color: var(--accent); }
+.live-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); animation: pulse 1.5s infinite; }
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+/* LEADERBOARD STICKY SIDEBAR */
+.app-layout { display: flex; min-height: calc(100vh - 53px); }
+.sidebar {
+  width: 260px; flex-shrink: 0; background: var(--bg2);
+  border-right: 1px solid var(--border);
+  position: sticky; top: 53px; height: calc(100vh - 53px);
+  overflow-y: auto;
+}
+.sidebar-title {
+  padding: 16px 16px 10px; font-family: var(--font-display);
+  font-size: 10px; letter-spacing: 0.12em; color: var(--text3); text-transform: uppercase;
+  border-bottom: 1px solid var(--border);
+}
+.lb-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 14px; border-bottom: 1px solid var(--border);
+  font-size: 12px; position: relative; overflow: hidden;
+}
+.lb-row::before {
+  content: ''; position: absolute; left: 0; top: 0; bottom: 0;
+  width: 3px; background: var(--team-color, transparent);
+}
+.lb-pos { font-family: var(--font-mono); font-size: 11px; color: var(--text3); min-width: 18px; }
+.lb-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--team-color); flex-shrink: 0; }
+.lb-name { flex: 1; font-weight: 500; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lb-pts { font-family: var(--font-mono); font-size: 12px; font-weight: 600; color: var(--gold); }
+.lb-gap { font-family: var(--font-mono); font-size: 10px; color: var(--text3); }
+.sidebar-section { padding: 12px 14px 8px; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text3); margin-top: 4px; }
+
+/* MAIN CONTENT */
+.main { flex: 1; overflow-y: auto; padding: 28px; }
+.page { display: none; }
+.page.active { display: block; }
+.page-title { font-family: var(--font-display); font-size: 22px; font-weight: 700; letter-spacing: 0.05em; margin-bottom: 6px; }
+.page-sub { font-size: 13px; color: var(--text2); margin-bottom: 24px; }
+
+/* CARDS */
+.card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r-lg); padding: 20px;
+  margin-bottom: 16px;
+}
+.card-header { font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text3); margin-bottom: 12px; }
+
+/* GRID */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+.grid-auto { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; }
+
+/* ASSET CARDS */
+.asset-card {
+  background: var(--bg3); border: 1px solid var(--border);
+  border-radius: var(--r); padding: 14px; cursor: pointer;
+  transition: all 0.15s; position: relative; overflow: hidden;
+}
+.asset-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: var(--type-color, var(--border2));
+}
+.asset-card:hover { border-color: var(--border2); background: var(--bg4); }
+.asset-card.assigned { opacity: 0.4; cursor: default; }
+.asset-card.selected-for-assign { border-color: var(--blue); box-shadow: 0 0 0 1px var(--blue); }
+.asset-type-tag { font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 600; color: var(--type-color); margin-bottom: 6px; }
+.asset-name { font-size: 13px; font-weight: 600; margin-bottom: 3px; }
+.asset-nation { font-size: 11px; color: var(--text3); margin-bottom: 10px; }
+.asset-ovr { display: flex; align-items: baseline; gap: 4px; }
+.ovr-num { font-family: var(--font-display); font-size: 26px; font-weight: 700; color: var(--text); }
+.ovr-label { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; }
+.asset-price-row { display: flex; align-items: center; gap: 6px; margin-top: 8px; }
+.price-input { background: var(--bg); border: 1px solid var(--border2); border-radius: 4px; padding: 4px 8px; font-size: 12px; font-family: var(--font-mono); color: var(--gold); width: 90px; }
+.price-input:focus { outline: none; border-color: var(--blue); }
+
+/* TEAM PANELS */
+.team-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-left: 3px solid var(--team-color, var(--border));
+  border-radius: var(--r-lg); padding: 16px; margin-bottom: 12px;
+}
+.team-header { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+.team-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--team-color); flex-shrink: 0; }
+.team-name-disp { font-family: var(--font-display); font-size: 13px; font-weight: 700; letter-spacing: 0.05em; flex: 1; }
+.team-ovr-badge {
+  font-family: var(--font-mono); font-size: 12px; padding: 3px 8px;
+  background: var(--bg3); border-radius: 4px; border: 1px solid var(--border2);
+}
+.team-spent { font-size: 11px; color: var(--gold); font-family: var(--font-mono); }
+.slot-row { display: flex; align-items: center; gap: 8px; padding: 7px 0; border-bottom: 1px solid var(--border); }
+.slot-row:last-child { border-bottom: none; }
+.slot-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text3); min-width: 70px; }
+.slot-fill { flex: 1; font-size: 12px; font-weight: 500; }
+.slot-ovr { font-family: var(--font-mono); font-size: 11px; color: var(--text3); }
+.slot-remove { font-size: 10px; color: var(--accent); cursor: pointer; background: none; border: none; padding: 2px 4px; }
+.slot-empty { color: var(--text3); font-style: italic; font-size: 11px; }
+
+/* BUTTONS */
+.btn { padding: 8px 16px; border-radius: var(--r); font-size: 12px; font-weight: 600; letter-spacing: 0.05em; cursor: pointer; border: 1px solid var(--border2); background: var(--bg3); color: var(--text); transition: all 0.15s; text-transform: uppercase; }
+.btn:hover { background: var(--bg4); border-color: var(--border2); }
+.btn-red { background: var(--accent); border-color: var(--accent); color: white; }
+.btn-red:hover { background: #c0001f; }
+.btn-green { background: var(--green); border-color: var(--green); color: #000; }
+.btn-green:hover { background: #00b862; }
+.btn-blue { background: var(--blue); border-color: var(--blue); color: white; }
+.btn-blue:hover { background: #0070cc; }
+.btn-sm { padding: 5px 10px; font-size: 11px; }
+.btn-xs { padding: 3px 8px; font-size: 10px; }
+
+/* FILTER PILLS */
+.filter-bar { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px; }
+.filter-pill { padding: 5px 14px; border-radius: 20px; font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer; border: 1px solid var(--border2); background: var(--bg3); color: var(--text3); transition: all 0.15s; }
+.filter-pill:hover { color: var(--text); }
+.filter-pill.active { background: var(--accent); border-color: var(--accent); color: white; }
+
+/* RACE SETUP */
+.track-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 8px; margin-bottom: 16px; }
+.track-card { background: var(--bg3); border: 1px solid var(--border); border-radius: var(--r); padding: 12px; cursor: pointer; transition: all 0.15s; }
+.track-card:hover { border-color: var(--border2); }
+.track-card.active { border-color: var(--accent); background: rgba(232,0,45,0.08); }
+.track-flag { font-size: 20px; margin-bottom: 4px; }
+.track-name { font-size: 12px; font-weight: 600; }
+.track-type { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; }
+.weather-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.w-pill { padding: 7px 14px; border-radius: 6px; font-size: 12px; font-weight: 500; cursor: pointer; border: 1px solid var(--border); background: var(--bg3); transition: all 0.15s; }
+.w-pill.active { border-color: var(--blue); background: rgba(0,144,255,0.1); color: var(--blue); }
+
+/* STRATEGY BOARD */
+.strat-row { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-bottom: 1px solid var(--border); }
+.strat-team { display: flex; align-items: center; gap: 8px; min-width: 160px; }
+.strat-select { background: var(--bg3); border: 1px solid var(--border2); border-radius: 4px; padding: 5px 8px; font-size: 12px; color: var(--text); flex: 1; }
+.strat-select:focus { outline: none; border-color: var(--blue); }
+.strat-risk { display: flex; gap: 4px; }
+.risk-btn { padding: 4px 8px; font-size: 10px; border-radius: 4px; cursor: pointer; border: 1px solid var(--border); background: var(--bg3); color: var(--text3); font-weight: 600; letter-spacing: 0.05em; }
+.risk-btn.active-low { border-color: var(--green); color: var(--green); background: rgba(0,215,117,0.1); }
+.risk-btn.active-med { border-color: var(--gold); color: var(--gold); background: rgba(255,215,0,0.1); }
+.risk-btn.active-high { border-color: var(--accent); color: var(--accent); background: rgba(232,0,45,0.1); }
+
+/* RACE ANIMATION */
+.race-container { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--r-lg); overflow: hidden; }
+.race-header { padding: 14px 20px; background: var(--bg3); border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; }
+.race-circuit { font-family: var(--font-display); font-size: 13px; font-weight: 700; letter-spacing: 0.08em; }
+.race-lap-display { font-family: var(--font-mono); font-size: 12px; color: var(--text2); margin-left: auto; }
+.race-progress-bar { height: 3px; background: var(--border); position: relative; }
+.race-progress-fill { height: 100%; background: var(--accent); transition: width 0.5s linear; }
+
+.positions-table { padding: 0; }
+.pos-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 20px; border-bottom: 1px solid var(--border);
+  transition: all 0.4s ease; position: relative;
+  overflow: hidden;
+}
+.pos-row::before {
+  content: ''; position: absolute; left: 0; top: 0; bottom: 0;
+  width: 3px; background: var(--team-color, transparent);
+}
+.pos-num { font-family: var(--font-display); font-size: 14px; font-weight: 900; min-width: 28px; color: var(--text3); }
+.pos-num.p1 { color: var(--gold); }
+.pos-num.p2 { color: var(--silver); }
+.pos-num.p3 { color: var(--bronze); }
+.pos-driver-info { flex: 1; }
+.pos-driver-name { font-size: 13px; font-weight: 600; }
+.pos-team-name { font-size: 10px; color: var(--text3); }
+.pos-gap { font-family: var(--font-mono); font-size: 11px; color: var(--text3); min-width: 70px; text-align: right; }
+.pos-tire { font-size: 10px; padding: 2px 6px; border-radius: 3px; font-weight: 700; }
+.tire-soft { background: rgba(232,0,45,0.2); color: var(--accent); }
+.tire-medium { background: rgba(255,215,0,0.15); color: var(--gold); }
+.tire-hard { background: rgba(255,255,255,0.08); color: var(--text2); }
+.pos-incident { font-size: 10px; padding: 2px 6px; background: rgba(232,0,45,0.1); border: 1px solid rgba(232,0,45,0.3); border-radius: 3px; color: var(--accent); }
+.pos-fastest { font-size: 10px; padding: 2px 6px; background: rgba(128,0,255,0.15); border: 1px solid rgba(128,0,255,0.3); border-radius: 3px; color: #a855f7; }
+
+/* RACE EVENTS TICKER */
+.events-ticker { height: 100px; overflow-y: auto; padding: 8px 16px; background: var(--bg); border-top: 1px solid var(--border); }
+.event-line { font-size: 11px; font-family: var(--font-mono); color: var(--text3); padding: 2px 0; }
+.event-line .lap-tag { color: var(--text2); margin-right: 8px; }
+.event-line.ev-sc { color: #FFB800; }
+.event-line.ev-dnf { color: var(--accent); }
+.event-line.ev-pit { color: var(--blue); }
+.event-line.ev-fl { color: #a855f7; }
+.event-line.ev-ol { color: var(--green); }
+
+/* RACE RESULTS */
+.result-row { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-bottom: 1px solid var(--border); }
+.res-pos { font-family: var(--font-display); font-size: 16px; font-weight: 900; min-width: 32px; }
+.res-pts { font-family: var(--font-mono); font-size: 13px; font-weight: 600; color: var(--gold); margin-left: auto; }
+
+/* TRADE PANEL */
+.trade-grid { display: grid; grid-template-columns: 1fr auto 1fr; gap: 16px; align-items: start; }
+.trade-arrow { display: flex; align-items: center; justify-content: center; padding-top: 40px; font-size: 24px; color: var(--text3); }
+
+/* INPUTS */
+input[type=text], input[type=number], select {
+  background: var(--bg3); border: 1px solid var(--border2); border-radius: var(--r);
+  padding: 8px 12px; font-size: 13px; color: var(--text); font-family: var(--font-body);
+}
+input:focus, select:focus { outline: none; border-color: var(--blue); }
+input[type=range] { accent-color: var(--accent); width: 100%; }
+input[type=color] { width: 36px; height: 32px; border: 1px solid var(--border2); border-radius: 4px; cursor: pointer; background: var(--bg3); padding: 2px; }
+
+/* MODAL */
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 200; display: none; align-items: center; justify-content: center; }
+.modal-overlay.open { display: flex; }
+.modal { background: var(--bg2); border: 1px solid var(--border2); border-radius: var(--r-lg); padding: 24px; width: 480px; max-height: 80vh; overflow-y: auto; }
+.modal-title { font-family: var(--font-display); font-size: 14px; font-weight: 700; letter-spacing: 0.06em; margin-bottom: 16px; }
+
+/* PUBLIC RACE VIEW (player-facing) */
+.pub-container { font-family: var(--font-body); }
+.pub-header { background: var(--bg2); border-bottom: 2px solid var(--accent); padding: 16px 24px; display: flex; align-items: center; gap: 16px; }
+.pub-logo { font-family: var(--font-display); font-size: 16px; font-weight: 900; letter-spacing: 0.1em; color: var(--accent); }
+.pub-track-info { flex: 1; }
+.pub-track-name { font-size: 14px; font-weight: 600; }
+.pub-conditions { font-size: 12px; color: var(--text2); }
+.pub-strat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; padding: 20px; }
+.pub-strat-card { background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--team-color); border-radius: var(--r); padding: 14px; }
+.pub-strat-heading { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text3); margin-bottom: 8px; }
+.strat-opts { display: flex; flex-direction: column; gap: 6px; }
+.strat-opt { padding: 8px 12px; background: var(--bg3); border: 1px solid var(--border); border-radius: var(--r); font-size: 12px; cursor: pointer; }
+.strat-opt.selected { border-color: var(--team-color); background: rgba(255,255,255,0.04); }
+.strat-opt:hover { border-color: var(--border2); }
+
+/* CONDITIONS DISPLAY */
+.cond-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; }
+.cond-card { background: var(--bg3); border: 1px solid var(--border); border-radius: var(--r); padding: 12px; text-align: center; }
+.cond-val { font-family: var(--font-display); font-size: 20px; font-weight: 700; }
+.cond-lbl { font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text3); margin-top: 4px; }
+
+/* UTIL */
+.flex { display: flex; align-items: center; }
+.gap-8 { gap: 8px; }
+.gap-12 { gap: 12px; }
+.gap-16 { gap: 16px; }
+.mt-8 { margin-top: 8px; }
+.mt-12 { margin-top: 12px; }
+.mt-16 { margin-top: 16px; }
+.mb-8 { margin-bottom: 8px; }
+.mb-16 { margin-bottom: 16px; }
+.text-sm { font-size: 12px; }
+.text-xs { font-size: 11px; }
+.text-muted { color: var(--text2); }
+.text-dim { color: var(--text3); }
+.text-gold { color: var(--gold); font-family: var(--font-mono); }
+.text-red { color: var(--accent); }
+.text-green { color: var(--green); }
+.text-purple { color: #a855f7; }
+.fw-600 { font-weight: 600; }
+.mono { font-family: var(--font-mono); }
+.divider { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
+.tag { display: inline-block; padding: 2px 7px; border-radius: 4px; font-size: 10px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; }
+.tag-complete { background: rgba(0,215,117,0.1); color: var(--green); border: 1px solid rgba(0,215,117,0.2); }
+.tag-incomplete { background: rgba(255,180,0,0.1); color: #ffb400; border: 1px solid rgba(255,180,0,0.2); }
+.sc-banner { background: rgba(255,183,0,0.1); border: 1px solid rgba(255,183,0,0.3); border-radius: var(--r); padding: 8px 14px; font-size: 12px; color: #ffb700; font-weight: 600; margin-bottom: 8px; display: none; }
+.sc-banner.show { display: block; }
+.separator { width: 1px; height: 20px; background: var(--border); }
+</style>
+</head>
+<body>
+
+<!-- TOP NAV -->
+<nav class="topnav">
+  <div class="topnav-logo">⬡ F1 MUN</div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="showPage('assets')">Assets</button>
+    <button class="nav-tab" onclick="showPage('teams')">Teams</button>
+    <button class="nav-tab" onclick="showPage('race-setup')">Race Setup</button>
+    <button class="nav-tab" onclick="showPage('race-live')">Live Race</button>
+    <button class="nav-tab" onclick="showPage('results')">Results</button>
+    <button class="nav-tab" onclick="showPage('trade')">Trade Desk</button>
+    <button class="nav-tab" onclick="showPage('player-view')">Player View</button>
+  </div>
+  <div class="nav-right">
+    <div class="live-badge"><div class="live-dot"></div><span id="race-status-label">READY</span></div>
+  </div>
+</nav>
+
+<div class="app-layout">
+<!-- STICKY LEADERBOARD SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-title">Championship — Constructors</div>
+  <div id="lb-constructors"></div>
+  <div class="sidebar-section">Race History</div>
+  <div id="lb-history" style="padding: 8px 14px;"></div>
+</aside>
+
+<!-- MAIN PAGES -->
+<main class="main">
+
+<!-- ═══════════════════ ASSETS PAGE ═══════════════════ -->
+<div id="page-assets" class="page active">
+  <div class="page-title">Asset Pool</div>
+  <div class="page-sub">Auction catalogue — set prices per asset. Ratings are hidden from players. Click an asset to assign it to a team slot.</div>
+  <div class="filter-bar" id="asset-filter-bar"></div>
+  <div class="grid-auto" id="asset-grid"></div>
+</div>
+
+<!-- ═══════════════════ TEAMS PAGE ═══════════════════ -->
+<div id="page-teams" class="page">
+  <div class="page-title">Team Builder</div>
+  <div class="page-sub">Create all 11 constructor teams. Assign assets from the asset pool. Track auction spend per team.</div>
+  <div class="card" style="padding:16px;">
+    <div class="flex gap-12 mb-8">
+      <input type="text" id="new-team-name" placeholder="Team name..." style="width:200px;">
+      <input type="color" id="new-team-color" value="#e8002d">
+      <button class="btn btn-red" onclick="createTeam()">+ New Team</button>
+    </div>
+  </div>
+  <div id="teams-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;"></div>
+</div>
+
+<!-- ═══════════════════ RACE SETUP ═══════════════════ -->
+<div id="page-race-setup" class="page">
+  <div class="page-title">Race Setup</div>
+  <div class="page-sub">Select circuit, conditions, and configure team strategies before simulating.</div>
+  <div class="grid-2">
+    <div>
+      <div class="card">
+        <div class="card-header">Circuit Selection</div>
+        <div class="track-grid" id="track-grid"></div>
+      </div>
+      <div class="card">
+        <div class="card-header">Weather & Conditions</div>
+        <div class="weather-row mb-16" id="weather-row"></div>
+        <div class="cond-grid" id="conditions-grid"></div>
+      </div>
+      <div class="card">
+        <div class="card-header">Race Parameters</div>
+        <div class="flex gap-12 mb-8" style="flex-direction:column;">
+          <div class="flex gap-12">
+            <span class="text-sm text-muted" style="min-width:140px;">Safety Car Probability</span>
+            <input type="range" min="0" max="80" value="30" id="sc-prob" oninput="document.getElementById('sc-val').textContent=this.value+'%'">
+            <span class="mono text-sm" id="sc-val">30%</span>
+          </div>
+          <div class="flex gap-12">
+            <span class="text-sm text-muted" style="min-width:140px;">Race Laps</span>
+            <input type="range" min="20" max="78" value="57" step="1" id="lap-count" oninput="document.getElementById('lap-val').textContent=this.value">
+            <span class="mono text-sm" id="lap-val">57</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <div class="card-header">Team Strategies (Locked before Race)</div>
+        <div id="strategy-board"></div>
+      </div>
+      <div class="card" style="margin-top:0;">
+        <button class="btn btn-red" style="width:100%;" onclick="startRace()">🏁 Launch Race Simulation</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ LIVE RACE ═══════════════════ -->
+<div id="page-race-live" class="page">
+  <div class="page-title">Live Race</div>
+  <div class="race-container">
+    <div class="race-header">
+      <span id="race-circuit-name" class="race-circuit">—</span>
+      <div class="sc-banner" id="sc-banner">🚗 Safety Car Deployed</div>
+      <div id="race-weather-badge" class="tag" style="background:rgba(0,144,255,0.1);color:var(--blue);">DRY</div>
+      <div class="race-lap-display">LAP <span id="race-lap-cur">0</span> / <span id="race-lap-tot">57</span></div>
+    </div>
+    <div class="race-progress-bar"><div class="race-progress-fill" id="race-progress" style="width:0%"></div></div>
+    <div class="positions-table" id="positions-table"></div>
+    <div class="events-ticker" id="events-ticker"></div>
+  </div>
+  <div style="display:flex;gap:10px;margin-top:14px;">
+    <button class="btn btn-red" id="btn-race-ctrl" onclick="toggleRace()">⏸ Pause</button>
+    <button class="btn" onclick="skipToEnd()">⏩ Skip to End</button>
+    <div style="flex:1;display:flex;align-items:center;gap:10px;justify-content:flex-end;">
+      <span class="text-sm text-muted">Speed</span>
+      <input type="range" min="1" max="10" value="5" id="race-speed" style="width:100px;">
+      <span class="mono text-sm" id="speed-label">5×</span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ RESULTS ═══════════════════ -->
+<div id="page-results" class="page">
+  <div class="page-title">Race Results</div>
+  <div class="page-sub">Final classification, points breakdown, and race analytics.</div>
+  <div id="results-container"></div>
+</div>
+
+<!-- ═══════════════════ TRADE DESK ═══════════════════ -->
+<div id="page-trade" class="page">
+  <div class="page-title">Trade Desk</div>
+  <div class="page-sub">Teams can exchange assets between races. Select two teams and the assets they wish to swap.</div>
+  <div class="card">
+    <div class="grid-3" style="gap:16px;align-items:start;">
+      <div>
+        <div class="card-header">Team A</div>
+        <select id="trade-team-a" style="width:100%;margin-bottom:10px;" onchange="renderTradeAssets()">
+          <option value="">Select team...</option>
+        </select>
+        <div id="trade-assets-a"></div>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:center;padding-top:50px;font-size:28px;color:var(--text3);">⇄</div>
+      <div>
+        <div class="card-header">Team B</div>
+        <select id="trade-team-b" style="width:100%;margin-bottom:10px;" onchange="renderTradeAssets()">
+          <option value="">Select team...</option>
+        </select>
+        <div id="trade-assets-b"></div>
+      </div>
+    </div>
+    <hr class="divider">
+    <div class="flex gap-12">
+      <div style="flex:1;background:var(--bg3);border-radius:var(--r);padding:12px;">
+        <div class="text-xs text-muted mb-8">A gives</div>
+        <div id="trade-a-gives" class="text-sm text-dim">Nothing selected</div>
+      </div>
+      <div style="flex:1;background:var(--bg3);border-radius:var(--r);padding:12px;">
+        <div class="text-xs text-muted mb-8">B gives</div>
+        <div id="trade-b-gives" class="text-sm text-dim">Nothing selected</div>
+      </div>
+    </div>
+    <div class="mt-12 flex gap-8">
+      <button class="btn btn-green" onclick="executeTrade()">✓ Execute Trade</button>
+      <button class="btn" onclick="clearTrade()">Clear</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ PLAYER VIEW ═══════════════════ -->
+<div id="page-player-view" class="page">
+  <div class="page-title">Player View</div>
+  <div class="page-sub" style="margin-bottom:16px;">This is what players see on their screens — race conditions and strategy selection only. No ratings shown.</div>
+  <div class="card" style="background:var(--bg2);border:1px solid var(--accent);padding:12px 16px;margin-bottom:16px;">
+    <span class="text-sm text-muted">⚡ Share this view on a projector / player screen. Players see conditions and choose strategy — no internal ratings visible.</span>
+  </div>
+  <div id="player-conditions"></div>
+  <div id="player-strat-grid"></div>
+</div>
+
+</main>
+</div>
+
+<!-- ASSIGN MODAL -->
+<div class="modal-overlay" id="assign-modal">
+  <div class="modal">
+    <div class="modal-title">Assign Asset</div>
+    <div id="assign-content"></div>
+    <div class="flex gap-8 mt-16">
+      <button class="btn btn-red" id="assign-confirm-btn">Confirm</button>
+      <button class="btn" onclick="closeModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════ DATA ═══════════════════
+const ASSETS = {
+  engines: [
+    { id:'e1', name:'Mercedes AMG HPP F1 M15', nat:'🇩🇪 Germany', ratings:{power:98,reliability:92,deployment:95,fuel_eff:88,thermal:90}, desc:'Peak power, legendary hybrid' },
+    { id:'e2', name:'Ferrari 066/12', nat:'🇮🇹 Italy', ratings:{power:96,reliability:87,deployment:91,fuel_eff:85,thermal:88} },
+    { id:'e3', name:'Red Bull Powertrains RB20', nat:'🇬🇧 UK / 🇯🇵 Honda', ratings:{power:97,reliability:90,deployment:94,fuel_eff:87,thermal:89} },
+    { id:'e4', name:'Renault E-Tech RE25', nat:'🇫🇷 France', ratings:{power:85,reliability:84,deployment:80,fuel_eff:82,thermal:81} },
+    { id:'e5', name:'Aston Martin Cognizant PU', nat:'🇬🇧 UK', ratings:{power:90,reliability:87,deployment:85,fuel_eff:89,thermal:86} },
+    { id:'e6', name:'Alpine A525 Unit', nat:'🇫🇷 France', ratings:{power:86,reliability:83,deployment:82,fuel_eff:83,thermal:80} },
+    { id:'e7', name:'Williams Mercedes Customer', nat:'🇬🇧 UK', ratings:{power:93,reliability:91,deployment:88,fuel_eff:87,thermal:85} },
+    { id:'e8', name:'Haas Ferrari Customer', nat:'🇺🇸 USA', ratings:{power:91,reliability:85,deployment:87,fuel_eff:84,thermal:83} },
+    { id:'e9', name:'Kick Sauber Ferrari', nat:'🇨🇭 Switzerland', ratings:{power:88,reliability:82,deployment:83,fuel_eff:81,thermal:80} },
+    { id:'e10', name:'McLaren Mercedes Customer', nat:'🇬🇧 UK', ratings:{power:95,reliability:90,deployment:90,fuel_eff:88,thermal:87} },
+    { id:'e11', name:'Racing Bulls Honda', nat:'🇮🇹 Italy / 🇯🇵 Honda', ratings:{power:92,reliability:88,deployment:89,fuel_eff:85,thermal:84} },
+    { id:'e12', name:'Cadillac GME PU (2026)', nat:'🇺🇸 USA', ratings:{power:83,reliability:80,deployment:78,fuel_eff:79,thermal:77} },
+    { id:'e13', name:'Porsche Project X PU', nat:'🇩🇪 Germany', ratings:{power:87,reliability:85,deployment:84,fuel_eff:86,thermal:83} },
+    { id:'e14', name:'BMW Motorsport HPP', nat:'🇩🇪 Germany', ratings:{power:84,reliability:82,deployment:80,fuel_eff:85,thermal:81} },
+    { id:'e15', name:'Cosworth Hybrid Evolution', nat:'🇬🇧 UK', ratings:{power:78,reliability:90,deployment:75,fuel_eff:88,thermal:85} },
+  ],
+  principals: [
+    { id:'p1', name:'Christian Horner', nat:'🇬🇧 UK', ratings:{strategy:97,morale:88,budget_mgmt:92,media:85,driver_mgmt:90} },
+    { id:'p2', name:'Toto Wolff', nat:'🇦🇹 Austria', ratings:{strategy:95,morale:92,budget_mgmt:96,media:90,driver_mgmt:94} },
+    { id:'p3', name:'Fred Vasseur', nat:'🇫🇷 France', ratings:{strategy:88,morale:90,budget_mgmt:86,media:80,driver_mgmt:91} },
+    { id:'p4', name:'Andrea Stella', nat:'🇮🇹 Italy', ratings:{strategy:91,morale:88,budget_mgmt:83,media:75,driver_mgmt:87} },
+    { id:'p5', name:'Günther Steiner', nat:'🇮🇹 Italy', ratings:{strategy:78,morale:82,budget_mgmt:75,media:96,driver_mgmt:78} },
+    { id:'p6', name:'James Vowles', nat:'🇬🇧 UK', ratings:{strategy:85,morale:86,budget_mgmt:82,media:79,driver_mgmt:85} },
+    { id:'p7', name:'Mike Krack', nat:'🇱🇺 Luxembourg', ratings:{strategy:83,morale:84,budget_mgmt:80,media:72,driver_mgmt:82} },
+    { id:'p8', name:'Laurent Mekies', nat:'🇫🇷 France', ratings:{strategy:82,morale:80,budget_mgmt:78,media:70,driver_mgmt:80} },
+    { id:'p9', name:'Ayao Komatsu', nat:'🇯🇵 Japan', ratings:{strategy:84,morale:83,budget_mgmt:81,media:71,driver_mgmt:83} },
+    { id:'p10', name:'Alessandro Alunni Bravi', nat:'🇮🇹 Italy', ratings:{strategy:76,morale:78,budget_mgmt:74,media:68,driver_mgmt:76} },
+    { id:'p11', name:'Zak Brown (CEO)', nat:'🇺🇸 USA', ratings:{strategy:80,morale:88,budget_mgmt:90,media:92,driver_mgmt:83} },
+    { id:'p12', name:'Franz Tost', nat:'🇦🇹 Austria', ratings:{strategy:87,morale:80,budget_mgmt:83,media:73,driver_mgmt:86} },
+    { id:'p13', name:'Colin Kolles', nat:'🇷🇴 Romania', ratings:{strategy:81,morale:74,budget_mgmt:88,media:65,driver_mgmt:74} },
+    { id:'p14', name:'Flavio Briatore', nat:'🇮🇹 Italy', ratings:{strategy:86,morale:72,budget_mgmt:91,media:88,driver_mgmt:79} },
+    { id:'p15', name:'Monisha Kaltenborn', nat:'🇮🇳 India', ratings:{strategy:79,morale:82,budget_mgmt:84,media:75,driver_mgmt:80} },
+  ],
+  drivers: [
+    { id:'d1', name:'Max Verstappen', nat:'🇳🇱 Netherlands', ratings:{pace:99,racecraft:97,wet_weather:96,tyre_mgmt:94,consistency:98,qualifying:99} },
+    { id:'d2', name:'Lewis Hamilton', nat:'🇬🇧 UK', ratings:{pace:95,racecraft:98,wet_weather:98,tyre_mgmt:96,consistency:97,qualifying:95} },
+    { id:'d3', name:'Charles Leclerc', nat:'🇲🇨 Monaco', ratings:{pace:97,racecraft:91,wet_weather:89,tyre_mgmt:88,consistency:90,qualifying:97} },
+    { id:'d4', name:'Lando Norris', nat:'🇬🇧 UK', ratings:{pace:94,racecraft:90,wet_weather:88,tyre_mgmt:91,consistency:91,qualifying:94} },
+    { id:'d5', name:'Carlos Sainz Jr.', nat:'🇪🇸 Spain', ratings:{pace:90,racecraft:92,wet_weather:91,tyre_mgmt:93,consistency:93,qualifying:89} },
+    { id:'d6', name:'George Russell', nat:'🇬🇧 UK', ratings:{pace:91,racecraft:88,wet_weather:87,tyre_mgmt:89,consistency:88,qualifying:92} },
+    { id:'d7', name:'Fernando Alonso', nat:'🇪🇸 Spain', ratings:{pace:88,racecraft:99,wet_weather:95,tyre_mgmt:97,consistency:94,qualifying:86} },
+    { id:'d8', name:'Oscar Piastri', nat:'🇦🇺 Australia', ratings:{pace:89,racecraft:87,wet_weather:85,tyre_mgmt:90,consistency:87,qualifying:89} },
+    { id:'d9', name:'Sergio Pérez', nat:'🇲🇽 Mexico', ratings:{pace:87,racecraft:88,wet_weather:84,tyre_mgmt:95,consistency:85,qualifying:84} },
+    { id:'d10', name:'Lance Stroll', nat:'🇨🇦 Canada', ratings:{pace:80,racecraft:78,wet_weather:82,tyre_mgmt:81,consistency:80,qualifying:78} },
+    { id:'d11', name:'Valtteri Bottas', nat:'🇫🇮 Finland', ratings:{pace:85,racecraft:84,wet_weather:86,tyre_mgmt:87,consistency:86,qualifying:86} },
+    { id:'d12', name:'Nico Hülkenberg', nat:'🇩🇪 Germany', ratings:{pace:84,racecraft:83,wet_weather:83,tyre_mgmt:83,consistency:85,qualifying:85} },
+    { id:'d13', name:'Pierre Gasly', nat:'🇫🇷 France', ratings:{pace:85,racecraft:82,wet_weather:84,tyre_mgmt:82,consistency:83,qualifying:83} },
+    { id:'d14', name:'Esteban Ocon', nat:'🇫🇷 France', ratings:{pace:83,racecraft:81,wet_weather:82,tyre_mgmt:81,consistency:82,qualifying:82} },
+    { id:'d15', name:'Yuki Tsunoda', nat:'🇯🇵 Japan', ratings:{pace:83,racecraft:80,wet_weather:79,tyre_mgmt:79,consistency:80,qualifying:82} },
+    { id:'d16', name:'Kevin Magnussen', nat:'🇩🇰 Denmark', ratings:{pace:79,racecraft:82,wet_weather:80,tyre_mgmt:78,consistency:78,qualifying:78} },
+    { id:'d17', name:'Zhou Guanyu', nat:'🇨🇳 China', ratings:{pace:77,racecraft:76,wet_weather:75,tyre_mgmt:77,consistency:77,qualifying:76} },
+    { id:'d18', name:'Alexander Albon', nat:'🇹🇭 Thailand', ratings:{pace:83,racecraft:82,wet_weather:82,tyre_mgmt:84,consistency:83,qualifying:81} },
+    { id:'d19', name:'Logan Sargeant', nat:'🇺🇸 USA', ratings:{pace:74,racecraft:73,wet_weather:72,tyre_mgmt:74,consistency:73,qualifying:73} },
+    { id:'d20', name:'Jack Doohan', nat:'🇦🇺 Australia', ratings:{pace:78,racecraft:76,wet_weather:77,tyre_mgmt:76,consistency:76,qualifying:77} },
+    { id:'d21', name:'Oliver Bearman', nat:'🇬🇧 UK', ratings:{pace:79,racecraft:77,wet_weather:76,tyre_mgmt:77,consistency:77,qualifying:78} },
+    { id:'d22', name:'Andrea Kimi Antonelli', nat:'🇮🇹 Italy', ratings:{pace:82,racecraft:78,wet_weather:80,tyre_mgmt:79,consistency:79,qualifying:83} },
+  ],
+  aero: [
+    { id:'a1', name:'Active Suspension + DAS', nat:'🏭 Advanced', ratings:{downforce:95,drag:85,street_circuit:90,high_speed:92,balance:90} },
+    { id:'a2', name:'High Downforce Monaco Spec', nat:'🏭 Street', ratings:{downforce:99,drag:65,street_circuit:99,high_speed:70,balance:80} },
+    { id:'a3', name:'Low Drag Monza Spec', nat:'🏭 Power', ratings:{downforce:72,drag:99,street_circuit:68,high_speed:99,balance:78} },
+    { id:'a4', name:'Balanced Medium Spec', nat:'🏭 All-rounder', ratings:{downforce:88,drag:88,street_circuit:86,high_speed:87,balance:92} },
+    { id:'a5', name:'Red Bull Outwash Concept', nat:'🏭 Advanced', ratings:{downforce:94,drag:82,street_circuit:88,high_speed:91,balance:93} },
+    { id:'a6', name:'Mercedes Zero-Pod Design', nat:'🏭 Experimental', ratings:{downforce:90,drag:90,street_circuit:84,high_speed:94,balance:89} },
+    { id:'a7', name:'Ferrari Sidepod Undercut', nat:'🏭 Advanced', ratings:{downforce:93,drag:83,street_circuit:89,high_speed:90,balance:91} },
+    { id:'a8', name:'McLaren Papaya Diffuser', nat:'🏭 Efficient', ratings:{downforce:91,drag:87,street_circuit:85,high_speed:90,balance:93} },
+    { id:'a9', name:'Wet/Mixed Weather Kit', nat:'🏭 Adaptive', ratings:{downforce:87,drag:84,street_circuit:87,high_speed:82,balance:95} },
+    { id:'a10', name:'Budget Mid-Field Spec', nat:'🏭 Standard', ratings:{downforce:80,drag:80,street_circuit:80,high_speed:80,balance:85} },
+    { id:'a11', name:'Altitude Thin-Air Package', nat:'🏭 Specialized', ratings:{downforce:89,drag:86,street_circuit:82,high_speed:88,balance:87} },
+    { id:'a12', name:'Porpoising Elimination Rig', nat:'🏭 Stability', ratings:{downforce:86,drag:88,street_circuit:85,high_speed:87,balance:96} },
+    { id:'a13', name:'McLaren Ground Effect V2', nat:'🏭 Cutting Edge', ratings:{downforce:96,drag:79,street_circuit:91,high_speed:89,balance:90} },
+    { id:'a14', name:'Williams Coanda Package', nat:'🏭 Efficient', ratings:{downforce:83,drag:85,street_circuit:80,high_speed:84,balance:88} },
+    { id:'a15', name:'Haas Carry-Over Concept', nat:'🏭 Standard', ratings:{downforce:77,drag:82,street_circuit:76,high_speed:78,balance:82} },
+  ],
+  strategists: [
+    { id:'s1', name:'Hannah Schmitz', nat:'🇬🇧 UK (Red Bull)', ratings:{undercut:98,overcut:95,safety_car:99,tyre_choice:96,pitstop_timing:97} },
+    { id:'s2', name:'James Vowles', nat:'🇬🇧 UK (Williams)', ratings:{undercut:90,overcut:88,safety_car:91,tyre_choice:92,pitstop_timing:89} },
+    { id:'s3', name:'Inaki Rueda', nat:'🇪🇸 Spain (Ferrari)', ratings:{undercut:82,overcut:85,safety_car:80,tyre_choice:88,pitstop_timing:83} },
+    { id:'s4', name:'Andrew Shovlin', nat:'🇬🇧 UK (Mercedes)', ratings:{undercut:91,overcut:93,safety_car:90,tyre_choice:94,pitstop_timing:92} },
+    { id:'s5', name:'Will Courtenay', nat:'🇬🇧 UK (McLaren)', ratings:{undercut:93,overcut:91,safety_car:88,tyre_choice:93,pitstop_timing:90} },
+    { id:'s6', name:'Eduard Pérez', nat:'🇪🇸 Spain (Alpine)', ratings:{undercut:83,overcut:82,safety_car:81,tyre_choice:84,pitstop_timing:82} },
+    { id:'s7', name:'Tom McCullough', nat:'🇬🇧 UK (Aston)', ratings:{undercut:86,overcut:87,safety_car:85,tyre_choice:88,pitstop_timing:85} },
+    { id:'s8', name:'Simone Resta', nat:'🇮🇹 Italy (Haas)', ratings:{undercut:80,overcut:81,safety_car:79,tyre_choice:82,pitstop_timing:80} },
+    { id:'s9', name:'Carlo Schmid', nat:'🇨🇭 Switzerland (Sauber)', ratings:{undercut:77,overcut:78,safety_car:76,tyre_choice:79,pitstop_timing:77} },
+    { id:'s10', name:'Dave Greenwood', nat:'🇬🇧 UK (Haas prev.)', ratings:{undercut:82,overcut:80,safety_car:83,tyre_choice:81,pitstop_timing:81} },
+    { id:'s11', name:'Ciaron Pilbeam', nat:'🇬🇧 UK (McLaren)', ratings:{undercut:88,overcut:86,safety_car:87,tyre_choice:89,pitstop_timing:87} },
+    { id:'s12', name:'Gary Connelly', nat:'🇦🇺 Australia', ratings:{undercut:79,overcut:80,safety_car:78,tyre_choice:80,pitstop_timing:79} },
+    { id:'s13', name:'Alan Permane', nat:'🇬🇧 UK (Alpine prev.)', ratings:{undercut:85,overcut:84,safety_car:83,tyre_choice:86,pitstop_timing:84} },
+    { id:'s14', name:'Marco Matassa', nat:'🇮🇹 Italy (Red Bull)', ratings:{undercut:87,overcut:85,safety_car:84,tyre_choice:87,pitstop_timing:86} },
+    { id:'s15', name:'Tim Malyon', nat:'🇬🇧 UK (Williams)', ratings:{undercut:81,overcut:82,safety_car:80,tyre_choice:83,pitstop_timing:80} },
+  ],
+  pitstops: [
+    { id:'pt1', name:'Red Bull Racing Pit Crew', nat:'🇦🇹 Austria', ratings:{stop_time:99,reliability:96,undercut_exec:98,pressure_handling:95,multi_stop:97} },
+    { id:'pt2', name:'Mercedes AMG Pit Crew', nat:'🇩🇪 Germany', ratings:{stop_time:97,reliability:97,undercut_exec:96,pressure_handling:96,multi_stop:96} },
+    { id:'pt3', name:'Ferrari Pit Crew', nat:'🇮🇹 Italy', ratings:{stop_time:95,reliability:89,undercut_exec:94,pressure_handling:88,multi_stop:93} },
+    { id:'pt4', name:'McLaren Pit Crew', nat:'🇬🇧 UK', ratings:{stop_time:96,reliability:93,undercut_exec:95,pressure_handling:93,multi_stop:95} },
+    { id:'pt5', name:'Aston Martin Pit Crew', nat:'🇬🇧 UK', ratings:{stop_time:91,reliability:92,undercut_exec:90,pressure_handling:91,multi_stop:90} },
+    { id:'pt6', name:'Alpine Pit Crew', nat:'🇫🇷 France', ratings:{stop_time:88,reliability:87,undercut_exec:87,pressure_handling:86,multi_stop:87} },
+    { id:'pt7', name:'Williams Pit Crew', nat:'🇬🇧 UK', ratings:{stop_time:87,reliability:88,undercut_exec:86,pressure_handling:87,multi_stop:86} },
+    { id:'pt8', name:'Haas Pit Crew', nat:'🇺🇸 USA', ratings:{stop_time:85,reliability:84,undercut_exec:84,pressure_handling:83,multi_stop:84} },
+    { id:'pt9', name:'Racing Bulls Pit Crew', nat:'🇮🇹 Italy', ratings:{stop_time:89,reliability:86,undercut_exec:88,pressure_handling:85,multi_stop:88} },
+    { id:'pt10', name:'Kick Sauber Pit Crew', nat:'🇨🇭 Switzerland', ratings:{stop_time:83,reliability:84,undercut_exec:82,pressure_handling:83,multi_stop:82} },
+    { id:'pt11', name:'Veteran British Crew', nat:'🇬🇧 UK', ratings:{stop_time:92,reliability:94,undercut_exec:91,pressure_handling:93,multi_stop:91} },
+    { id:'pt12', name:'Italian Specialist Crew', nat:'🇮🇹 Italy', ratings:{stop_time:90,reliability:88,undercut_exec:90,pressure_handling:87,multi_stop:89} },
+    { id:'pt13', name:'Spanish Mechanics Elite', nat:'🇪🇸 Spain', ratings:{stop_time:88,reliability:90,undercut_exec:88,pressure_handling:89,multi_stop:88} },
+    { id:'pt14', name:'Freelance Expert Crew', nat:'🌍 International', ratings:{stop_time:86,reliability:85,undercut_exec:85,pressure_handling:84,multi_stop:85} },
+    { id:'pt15', name:'Budget Crew Standard', nat:'🌍 Mixed', ratings:{stop_time:80,reliability:82,undercut_exec:79,pressure_handling:80,multi_stop:80} },
+  ],
+};
+
+const TRACKS = [
+  { id:'t1', name:'Monaco', flag:'🇲🇨', type:'Street', ch:{overtaking:10,tyre_deg:40,power_dep:45,downforce_dep:95,sc_base:55,wet_sens:60} },
+  { id:'t2', name:'Monza', flag:'🇮🇹', type:'Power', ch:{overtaking:85,tyre_deg:50,power_dep:95,downforce_dep:30,sc_base:40,wet_sens:65} },
+  { id:'t3', name:'Spa-Francorchamps', flag:'🇧🇪', type:'Mixed', ch:{overtaking:70,tyre_deg:70,power_dep:75,downforce_dep:65,sc_base:50,wet_sens:95} },
+  { id:'t4', name:'Suzuka', flag:'🇯🇵', type:'Technical', ch:{overtaking:45,tyre_deg:80,power_dep:65,downforce_dep:85,sc_base:35,wet_sens:75} },
+  { id:'t5', name:'Silverstone', flag:'🇬🇧', type:'High-speed', ch:{overtaking:60,tyre_deg:85,power_dep:70,downforce_dep:75,sc_base:30,wet_sens:90} },
+  { id:'t6', name:'Bahrain', flag:'🇧🇭', type:'Balanced', ch:{overtaking:65,tyre_deg:90,power_dep:65,downforce_dep:65,sc_base:25,wet_sens:20} },
+  { id:'t7', name:'Singapore', flag:'🇸🇬', type:'Street', ch:{overtaking:20,tyre_deg:55,power_dep:50,downforce_dep:90,sc_base:70,wet_sens:80} },
+  { id:'t8', name:'Mexico City', flag:'🇲🇽', type:'Altitude', ch:{overtaking:55,tyre_deg:60,power_dep:85,downforce_dep:60,sc_base:30,wet_sens:40} },
+  { id:'t9', name:'Interlagos', flag:'🇧🇷', type:'Street/Mixed', ch:{overtaking:75,tyre_deg:65,power_dep:70,downforce_dep:68,sc_base:45,wet_sens:88} },
+  { id:'t10', name:'Abu Dhabi', flag:'🇦🇪', type:'Technical', ch:{overtaking:50,tyre_deg:55,power_dep:70,downforce_dep:75,sc_base:25,wet_sens:15} },
+  { id:'t11', name:'Jeddah', flag:'🇸🇦', type:'Street/Power', ch:{overtaking:50,tyre_deg:45,power_dep:80,downforce_dep:70,sc_base:65,wet_sens:30} },
+  { id:'t12', name:'Zandvoort', flag:'🇳🇱', type:'Banked', ch:{overtaking:35,tyre_deg:80,power_dep:65,downforce_dep:85,sc_base:30,wet_sens:75} },
+  { id:'t13', name:'Melbourne', flag:'🇦🇺', type:'Street', ch:{overtaking:40,tyre_deg:55,power_dep:60,downforce_dep:80,sc_base:50,wet_sens:70} },
+  { id:'t14', name:'Shanghai', flag:'🇨🇳', type:'Technical', ch:{overtaking:55,tyre_deg:70,power_dep:68,downforce_dep:75,sc_base:35,wet_sens:70} },
+  { id:'t15', name:'Baku', flag:'🇦🇿', type:'Street/Power', ch:{overtaking:65,tyre_deg:50,power_dep:78,downforce_dep:72,sc_base:60,wet_sens:55} },
+];
+
+const WEATHER_OPTIONS = [
+  { id:'dry', label:'☀️ Dry', mods:{power:1.0,reliability:1.0,wet:0,tyre:1.0,sc:1.0} },
+  { id:'overcast', label:'☁️ Overcast', mods:{power:0.99,reliability:0.99,wet:0.2,tyre:1.01,sc:1.1} },
+  { id:'wet', label:'🌧️ Wet', mods:{power:0.88,reliability:0.91,wet:1.0,tyre:0.82,sc:1.6} },
+  { id:'mixed', label:'⛈️ Mixed', mods:{power:0.93,reliability:0.93,wet:0.6,tyre:0.87,sc:1.35} },
+];
+
+const STRATEGIES = ['1-Stop Aggressive','1-Stop Conservative','2-Stop Undercut','2-Stop Overcut','3-Stop Blitz','Soft-Soft-Hard','Hard-Medium-Soft','Safety Car Gamble','Custom'];
+const RISK_LEVELS = ['Safe','Medium','High'];
+const POINTS_SYS = [25,18,15,12,10,8,6,4,2,1];
+const TYPE_COLORS = { engines:'#0090ff', principals:'#e8002d', drivers:'#00d775', aero:'#FFB800', strategists:'#a855f7', pitstops:'#ff6b35' };
+const TYPE_LABELS = { engines:'Engine', principals:'Principal', drivers:'Driver', aero:'Aero Package', strategists:'Strategist', pitstops:'Pit Crew' };
+
+// ═══════════════════ STATE ═══════════════════
+let state = {
+  teams: [],
+  assignedAssets: new Set(),
+  prices: {},
+  filterType: 'all',
+  selectedTrack: 't3',
+  selectedWeather: 'dry',
+  strategies: {}, // teamId -> {strat, risk}
+  raceHistory: [],
+  raceData: null,
+  raceRunning: false,
+  racePaused: false,
+  raceInterval: null,
+  currentLap: 0,
+  pendingAssign: { assetId: null },
+  tradeA: null,
+  tradeB: null,
+  tradeAssetA: null,
+  tradeAssetB: null,
+};
+
+// ═══════════════════ HELPERS ═══════════════════
+function allAssets() {
+  return [...ASSETS.engines,...ASSETS.principals,...ASSETS.drivers,...ASSETS.aero,...ASSETS.strategists,...ASSETS.pitstops];
+}
+function getAsset(id) { return allAssets().find(a => a.id === id); }
+function assetType(id) {
+  for(const [k,arr] of Object.entries(ASSETS)) { if(arr.find(a=>a.id===id)) return k; }
+  return null;
+}
+function ovr(asset) {
+  const v = Object.values(asset.ratings);
+  return Math.round(v.reduce((a,b)=>a+b,0)/v.length);
+}
+function teamOvr(team) {
+  const slots = ['engine','principal','driver1','driver2','aero','strategist','pitcrew'];
+  const assets = slots.map(s=>team[s]).filter(Boolean);
+  if(!assets.length) return null;
+  const scores = assets.flatMap(a => Object.values(a.ratings));
+  return Math.round(scores.reduce((a,b)=>a+b,0)/scores.length);
+}
+function teamComplete(team) {
+  return team.engine && team.principal && team.driver1 && team.driver2 && team.aero && team.strategist && team.pitcrew;
+}
+function teamSpent(team) {
+  const slots = ['engine','principal','driver1','driver2','aero','strategist','pitcrew'];
+  return slots.reduce((sum,s) => sum + (team[s] ? (state.prices[team[s].id]||0) : 0), 0);
+}
+function rand(min,max) { return Math.random()*(max-min)+min; }
+function clamp(v,min,max) { return Math.max(min,Math.min(max,v)); }
+
+// ═══════════════════ NAVIGATION ═══════════════════
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  const tabs=['assets','teams','race-setup','race-live','results','trade','player-view'];
+  document.querySelectorAll('.nav-tab')[tabs.indexOf(name)]?.classList.add('active');
+  if(name==='teams') renderTeams();
+  if(name==='race-setup') renderRaceSetup();
+  if(name==='trade') renderTradeDesk();
+  if(name==='player-view') renderPlayerView();
+  if(name==='results') renderResults();
+}
+
+// ═══════════════════ ASSETS PAGE ═══════════════════
+function renderAssets() {
+  const types = ['all','engines','principals','drivers','aero','strategists','pitstops'];
+  const labels = {'all':'All','engines':'Engines','principals':'Principals','drivers':'Drivers','aero':'Aero','strategists':'Strategists','pitstops':'Pit Crews'};
+  document.getElementById('asset-filter-bar').innerHTML = types.map(t =>
+    `<button class="filter-pill ${state.filterType===t?'active':''}" onclick="setFilter('${t}')">${labels[t]}</button>`).join('');
+  const show = state.filterType==='all' ? allAssets() : ASSETS[state.filterType]||[];
+  document.getElementById('asset-grid').innerHTML = show.map(a => {
+    const type = assetType(a.id);
+    const color = TYPE_COLORS[type]||'#888';
+    const label = TYPE_LABELS[type]||type;
+    const rating = ovr(a);
+    const assigned = state.assignedAssets.has(a.id);
+    const price = state.prices[a.id]||'';
+    return `<div class="asset-card ${assigned?'assigned':''}" style="--type-color:${color};" onclick="${assigned?'':'openAssignModal(\''+a.id+'\')'}" id="ac-${a.id}">
+      <div class="asset-type-tag">${label}</div>
+      <div class="asset-name">${a.name}</div>
+      <div class="asset-nation">${a.nat}</div>
+      <div class="asset-ovr"><span class="ovr-num">${rating}</span><span class="ovr-label">OVR</span></div>
+      <div class="asset-price-row" onclick="event.stopPropagation()">
+        <span class="text-xs text-muted">$</span>
+        <input class="price-input" type="number" placeholder="Price..." value="${price}" onchange="setPrice('${a.id}',this.value)" onclick="event.stopPropagation()">
+        <span class="text-xs text-muted">M</span>
+      </div>
+      ${assigned?'<div style="font-size:10px;color:var(--green);margin-top:6px;font-weight:600;">✓ ASSIGNED</div>':''}
+    </div>`;
+  }).join('');
+}
+
+function setFilter(t) { state.filterType=t; renderAssets(); }
+function setPrice(id, val) { state.prices[id]=parseFloat(val)||0; updateLB(); }
+
+function openAssignModal(assetId) {
+  state.pendingAssign.assetId = assetId;
+  const a = getAsset(assetId);
+  const type = assetType(assetId);
+  const slotMap = {engines:'engine',principals:'principal',aero:'aero',strategists:'strategist',pitstops:'pitcrew'};
+  const slot = slotMap[type];
+  let eligibleTeams = state.teams.filter(t => {
+    if(type==='drivers') return !t.driver1||!t.driver2;
+    return slot && !t[slot];
+  });
+  if(!eligibleTeams.length) { alert('No teams have an open slot for this asset type.'); return; }
+  document.getElementById('assign-content').innerHTML = `
+    <div class="text-sm text-muted mb-16">Assigning: <strong>${a.name}</strong> (OVR ${ovr(a)})</div>
+    <div class="card-header" style="margin-bottom:8px;">Select Team</div>
+    ${eligibleTeams.map(t => `
+      <label style="display:flex;align-items:center;gap:10px;padding:10px;border:1px solid var(--border);border-radius:var(--r);margin-bottom:8px;cursor:pointer;">
+        <input type="radio" name="assign-team" value="${t.id}">
+        <div style="width:8px;height:8px;border-radius:50%;background:${t.color};"></div>
+        <span class="text-sm fw-600">${t.name}</span>
+        ${type==='drivers'?`<span class="text-xs text-muted">${!t.driver1?'→ Driver 1':'→ Driver 2'}</span>`:''}
+      </label>`).join('')}`;
+  document.getElementById('assign-confirm-btn').onclick = confirmAssign;
+  document.getElementById('assign-modal').classList.add('open');
+}
+
+function confirmAssign() {
+  const sel = document.querySelector('input[name="assign-team"]:checked');
+  if(!sel) return;
+  const teamId = sel.value;
+  const team = state.teams.find(t=>t.id===teamId);
+  const assetId = state.pendingAssign.assetId;
+  const a = getAsset(assetId);
+  const type = assetType(assetId);
+  const slotMap = {engines:'engine',principals:'principal',aero:'aero',strategists:'strategist',pitstops:'pitcrew'};
+  if(type==='drivers') { if(!team.driver1) team.driver1=a; else team.driver2=a; }
+  else { team[slotMap[type]]=a; }
+  state.assignedAssets.add(assetId);
+  closeModal();
+  renderAssets();
+  updateLB();
+}
+
+function closeModal() {
+  document.getElementById('assign-modal').classList.remove('open');
+}
+
+// ═══════════════════ TEAMS PAGE ═══════════════════
+function createTeam() {
+  const name = document.getElementById('new-team-name').value.trim()||`Team ${state.teams.length+1}`;
+  const color = document.getElementById('new-team-color').value;
+  const id = 'team-'+Date.now();
+  state.teams.push({id,name,color,engine:null,principal:null,driver1:null,driver2:null,aero:null,strategist:null,pitcrew:null,points:0});
+  state.strategies[id]={strat:'1-Stop Conservative',risk:'Medium'};
+  document.getElementById('new-team-name').value='';
+  renderTeams();
+  updateLB();
+}
+
+function renderTeams() {
+  const container = document.getElementById('teams-grid');
+  if(!state.teams.length){ container.innerHTML='<div class="text-sm text-muted" style="grid-column:span 2;">No teams yet. Add a team above.</div>'; return; }
+  container.innerHTML = state.teams.map((t,i) => {
+    const o = teamOvr(t);
+    const spent = teamSpent(t);
+    const complete = teamComplete(t);
+    const slots = [
+      {key:'engine',label:'Engine',val:t.engine},{key:'principal',label:'Principal',val:t.principal},
+      {key:'driver1',label:'Driver 1',val:t.driver1},{key:'driver2',label:'Driver 2',val:t.driver2},
+      {key:'aero',label:'Aero',val:t.aero},{key:'strategist',label:'Strategist',val:t.strategist},
+      {key:'pitcrew',label:'Pit Crew',val:t.pitcrew},
+    ];
+    return `<div class="team-card" style="--team-color:${t.color}">
+      <div class="team-header">
+        <div class="team-dot" style="background:${t.color}"></div>
+        <div class="team-name-disp">${t.name}</div>
+        ${o?`<div class="team-ovr-badge">OVR ${o}</div>`:''}
+        <span class="tag ${complete?'tag-complete':'tag-incomplete'}">${complete?'READY':'BUILDING'}</span>
+        <button class="btn btn-xs" style="margin-left:auto;color:var(--accent);border-color:var(--accent);" onclick="removeTeam('${t.id}')">✕</button>
+      </div>
+      <div class="text-xs text-gold mono mb-8">Spent: $${spent.toFixed(1)}M</div>
+      ${slots.map(s=>`<div class="slot-row">
+        <span class="slot-label">${s.label}</span>
+        ${s.val?`<span class="slot-fill">${s.val.name}</span><span class="slot-ovr">${ovr(s.val)}</span>
+        <button class="slot-remove" onclick="removeSlot('${t.id}','${s.key}')">✕</button>`:`<span class="slot-empty">— empty</span>`}
+      </div>`).join('')}
+    </div>`;
+  }).join('');
+}
+
+function removeTeam(id) {
+  const team = state.teams.find(t=>t.id===id);
+  if(!team) return;
+  ['engine','principal','driver1','driver2','aero','strategist','pitcrew'].forEach(s=>{
+    if(team[s]) state.assignedAssets.delete(team[s].id);
+  });
+  state.teams = state.teams.filter(t=>t.id!==id);
+  delete state.strategies[id];
+  renderTeams(); renderAssets(); updateLB();
+}
+
+function removeSlot(teamId, slot) {
+  const team = state.teams.find(t=>t.id===teamId);
+  if(!team) return;
+  if(team[slot]) { state.assignedAssets.delete(team[slot].id); team[slot]=null; }
+  renderTeams(); renderAssets(); updateLB();
+}
+
+// ═══════════════════ RACE SETUP ═══════════════════
+function renderRaceSetup() {
+  document.getElementById('track-grid').innerHTML = TRACKS.map(t =>
+    `<div class="track-card ${t.id===state.selectedTrack?'active':''}" onclick="selectTrack('${t.id}')">
+      <div class="track-flag">${t.flag}</div>
+      <div class="track-name">${t.name}</div>
+      <div class="track-type">${t.type}</div>
+    </div>`).join('');
+  document.getElementById('weather-row').innerHTML = WEATHER_OPTIONS.map(w =>
+    `<div class="w-pill ${w.id===state.selectedWeather?'active':''}" onclick="selectWeather('${w.id}')">${w.label}</div>`).join('');
+  renderConditions();
+  renderStrategyBoard();
+}
+
+function selectTrack(id) { state.selectedTrack=id; renderRaceSetup(); renderPlayerView(); }
+function selectWeather(id) { state.selectedWeather=id; renderRaceSetup(); renderPlayerView(); }
+
+function renderConditions() {
+  const t = TRACKS.find(x=>x.id===state.selectedTrack);
+  const w = WEATHER_OPTIONS.find(x=>x.id===state.selectedWeather);
+  const conds = [
+    {val:t.ch.overtaking+'%',lbl:'Overtaking'},
+    {val:t.ch.tyre_deg+'%',lbl:'Tyre Deg.'},
+    {val:t.ch.power_dep+'%',lbl:'Power Dep.'},
+    {val:t.ch.downforce_dep+'%',lbl:'Downforce Dep.'},
+    {val:t.ch.sc_base+'%',lbl:'SC Base Prob.'},
+    {val:w.label.split(' ')[1],lbl:'Weather'},
+  ];
+  document.getElementById('conditions-grid').innerHTML = conds.map(c =>
+    `<div class="cond-card"><div class="cond-val">${c.val}</div><div class="cond-lbl">${c.lbl}</div></div>`).join('');
+}
+
+function renderStrategyBoard() {
+  const teams = state.teams.filter(teamComplete);
+  if(!teams.length){ document.getElementById('strategy-board').innerHTML='<div class="text-sm text-muted" style="padding:10px 0;">No complete teams yet.</div>'; return; }
+  document.getElementById('strategy-board').innerHTML = teams.map(t => {
+    const s = state.strategies[t.id]||{strat:STRATEGIES[0],risk:'Medium'};
+    return `<div class="strat-row">
+      <div class="strat-team">
+        <div style="width:8px;height:8px;border-radius:50%;background:${t.color};"></div>
+        <span class="text-sm fw-600" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:110px;">${t.name}</span>
+      </div>
+      <select class="strat-select" onchange="setStrat('${t.id}','strat',this.value)">
+        ${STRATEGIES.map(s=>`<option ${(state.strategies[t.id]?.strat===s)?'selected':''}>${s}</option>`).join('')}
+      </select>
+      <div class="strat-risk">
+        ${RISK_LEVELS.map(r=>`<button class="risk-btn ${s.risk===r?'active-'+r.toLowerCase():''}" onclick="setStrat('${t.id}','risk','${r}')">${r}</button>`).join('')}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function setStrat(teamId, key, val) {
+  if(!state.strategies[teamId]) state.strategies[teamId]={strat:STRATEGIES[0],risk:'Medium'};
+  state.strategies[teamId][key]=val;
+  renderStrategyBoard();
+}
+
+// ═══════════════════ SCORING ENGINE ═══════════════════
+function computeTeamBaseScore(team, track, weather) {
+  const t = track.ch; const w = weather.mods;
+  const eng = team.engine?.ratings||{};
+  const dr1 = team.driver1?.ratings||{};
+  const dr2 = team.driver2?.ratings||{};
+  const aero = team.aero?.ratings||{};
+  const strat = team.strategist?.ratings||{};
+  const pit = team.pitcrew?.ratings||{};
+  const prin = team.principal?.ratings||{};
+
+  const engineScore =
+    (eng.power||80)*(t.power_dep/100)*w.power +
+    (eng.reliability||80)*w.reliability*0.5 +
+    (eng.deployment||80)*0.4 + (eng.fuel_eff||80)*(t.tyre_deg/200);
+
+  const d1Score =
+    (dr1.pace||75)*0.3 +
+    (dr1.racecraft||75)*(t.overtaking/120+0.1) +
+    (dr1.wet_weather||75)*w.wet +
+    (dr1.tyre_mgmt||75)*(t.tyre_deg/100)*w.tyre +
+    (dr1.consistency||75)*0.25 + (dr1.qualifying||75)*0.15;
+
+  const d2Score =
+    (dr2.pace||75)*0.25 +
+    (dr2.racecraft||75)*(t.overtaking/130+0.08) +
+    (dr2.wet_weather||75)*w.wet*0.7 +
+    (dr2.tyre_mgmt||75)*(t.tyre_deg/100)*w.tyre*0.8 +
+    (dr2.consistency||75)*0.22;
+
+  const aeroScore =
+    (aero.downforce||80)*(t.downforce_dep/100) +
+    (aero.drag||80)*((100-t.downforce_dep)/100) +
+    (t.type?.toLowerCase().includes('street')?(aero.street_circuit||80)*0.4:(aero.high_speed||80)*0.4);
+
+  const stratScore =
+    (strat.undercut||80)*0.25 + (strat.overcut||80)*0.2 +
+    (strat.safety_car||80)*(t.sc_base/100)*w.sc*0.3 +
+    (strat.tyre_choice||80)*(t.tyre_deg/150) + (strat.pitstop_timing||80)*0.2;
+
+  const pitScore =
+    (pit.stop_time||80)*0.35 + (pit.reliability||80)*0.3 +
+    (pit.undercut_exec||80)*0.2 + (pit.pressure_handling||80)*0.15;
+
+  const principalBonus = (prin.strategy||75)*0.15 + (prin.morale||75)*0.1;
+
+  const stRisk = state.strategies[team.id]?.risk||'Medium';
+  const riskMod = stRisk==='High'?(rand(0.85,1.18)):stRisk==='Low'?(rand(0.96,1.04)):rand(0.92,1.10);
+
+  return (engineScore+d1Score+d2Score+aeroScore+stratScore+pitScore+principalBonus)*riskMod;
+}
+
+// ═══════════════════ RACE SIMULATION ═══════════════════
+function startRace() {
+  const teams = state.teams.filter(teamComplete);
+  if(teams.length<2){ alert('Need at least 2 complete teams.'); return; }
+  const track = TRACKS.find(x=>x.id===state.selectedTrack);
+  const weather = WEATHER_OPTIONS.find(x=>x.id===state.selectedWeather);
+  const laps = parseInt(document.getElementById('lap-count').value);
+  const scProb = parseInt(document.getElementById('sc-prob').value);
+
+  // Initialize car data
+  const cars = teams.map(team => {
+    const base = computeTeamBaseScore(team, track, weather);
+    const relRating = team.engine?.ratings?.reliability||80;
+    const dnfChance = Math.max(0, (100-relRating*weather.mods.reliability)/100 * 0.18);
+    const tires = ['soft','soft','medium','hard'];
+    const shuffle = tires.sort(()=>Math.random()-0.5);
+    return {
+      team, base, gap: rand(-3,3), dnf:false, dnfLap:null,
+      currentTire: shuffle[0], tireAge:0,
+      pitstops:[], fastestLap:null, fastestLapTime:rand(80,100),
+      currentPos:0, penalties:0, scBenefit:false,
+      tireStrat:shuffle,
+    };
+  });
+
+  // Sort initial
+  cars.sort((a,b)=>(b.base+rand(-8,8))-(a.base+rand(-8,8)));
+  cars.forEach((c,i)=>c.currentPos=i+1);
+
+  state.raceData = { cars, track, weather, laps, scProb, currentLap:0, scActive:false, scLaps:0, events:[], raceOver:false };
+  state.currentLap = 0;
+
+  showPage('race-live');
+  document.getElementById('race-circuit-name').textContent = `${track.flag} ${track.name} GP`;
+  document.getElementById('race-lap-tot').textContent = laps;
+  document.getElementById('race-weather-badge').textContent = weather.label.split(' ')[1];
+  document.getElementById('race-status-label').textContent = 'RACING';
+  document.getElementById('events-ticker').innerHTML='';
+
+  renderPositions();
+  state.raceRunning = true;
+  state.racePaused = false;
+  scheduleNextLap();
+}
+
+function scheduleNextLap() {
+  if(!state.raceRunning) return;
+  const speed = parseInt(document.getElementById('race-speed').value);
+  document.getElementById('speed-label').textContent = speed+'×';
+  const delay = Math.max(200, 1200 - speed*100);
+  state.raceInterval = setTimeout(simulateLap, delay);
+}
+
+function simulateLap() {
+  if(state.racePaused || !state.raceRunning) return;
+  const rd = state.raceData;
+  rd.currentLap++;
+  state.currentLap = rd.currentLap;
+  document.getElementById('race-lap-cur').textContent = rd.currentLap;
+  document.getElementById('race-progress').style.width = (rd.currentLap/rd.laps*100)+'%';
+
+  // Safety car logic
+  if(!rd.scActive && Math.random()*100 < (rd.scProb/rd.laps)*2.5) {
+    rd.scActive = true; rd.scLaps = Math.floor(rand(2,6));
+    addEvent(rd.currentLap,'ev-sc','🚗 Safety Car deployed!');
+    document.getElementById('sc-banner').classList.add('show');
+  }
+  if(rd.scActive) {
+    rd.scLaps--;
+    if(rd.scLaps<=0){ rd.scActive=false; addEvent(rd.currentLap,'','Safety Car period ends'); document.getElementById('sc-banner').classList.remove('show'); }
+  }
+
+  // Simulate each car
+  rd.cars.forEach((car,i) => {
+    if(car.dnf) return;
+    car.tireAge++;
+
+    // Random DNF
+    const baseRel = car.team.engine?.ratings?.reliability||80;
+    if(Math.random() < (100-baseRel)/5000) {
+      car.dnf = true; car.dnfLap = rd.currentLap;
+      addEvent(rd.currentLap,'ev-dnf',`💥 DNF — ${car.team.name} (reliability failure)`);
+      return;
+    }
+
+    // Pit stop logic
+    const tireDegRate = rd.track.ch.tyre_deg/100;
+    const shouldPit = car.tireAge > (car.currentTire==='soft'?18:car.currentTire==='medium'?28:38)*tireDegRate
+      && car.pitstops.length < 2 && rd.currentLap < rd.laps-8;
+    if(shouldPit && (rd.scActive || Math.random()<0.35)) {
+      const pitTime = car.team.pitcrew ? (2.2 + rand(0,1) - car.team.pitcrew.ratings.stop_time/200) : rand(2.5,3.5);
+      car.pitstops.push({lap:rd.currentLap, time:pitTime.toFixed(2)});
+      const nextTire = car.tireStrat[car.pitstops.length]||'hard';
+      car.currentTire = nextTire;
+      car.tireAge = 0;
+      car.gap += pitTime;
+      addEvent(rd.currentLap,'ev-pit',`🔧 PIT ${car.team.name} → ${nextTire.toUpperCase()} (${pitTime.toFixed(2)}s)`);
+    }
+
+    // Overtakes
+    const sc = rd.scActive?0.5:1;
+    const trackOvt = rd.track.ch.overtaking/100;
+    const lapDelta = (car.base/150 + rand(-0.5,0.5))*sc*trackOvt;
+    car.gap -= lapDelta*0.01;
+
+    // Fastest lap tracking
+    const lapT = 80 + rand(0,15) + car.tireAge*0.05;
+    if(!car.fastestLap || lapT < car.fastestLapTime) {
+      car.fastestLapTime = lapT;
+      car.fastestLap = rd.currentLap;
+    }
+  });
+
+  // Reorder positions
+  const alive = rd.cars.filter(c=>!c.dnf).sort((a,b)=>a.gap-b.gap);
+  const dead = rd.cars.filter(c=>c.dnf);
+  const ordered = [...alive,...dead];
+  ordered.forEach((c,i)=>c.currentPos=i+1);
+
+  // Overtake event
+  rd.cars.forEach((car,i) => {
+    const oldPos = car.currentPos;
+  });
+
+  renderPositions();
+
+  if(rd.currentLap >= rd.laps) {
+    finishRace();
+  } else {
+    scheduleNextLap();
+  }
+}
+
+function renderPositions() {
+  const rd = state.raceData;
+  if(!rd) return;
+  const alive = rd.cars.filter(c=>!c.dnf).sort((a,b)=>a.gap-b.gap);
+  const dead = rd.cars.filter(c=>c.dnf);
+  const all = [...alive,...dead];
+  const leader = alive[0];
+
+  document.getElementById('positions-table').innerHTML = all.map((car,i) => {
+    const pos = i+1;
+    const posClass = pos===1?'p1':pos===2?'p2':pos===3?'p3':'';
+    const gapStr = car.dnf ? 'DNF' : (pos===1?'LEADER':`+${Math.abs(car.gap-leader.gap).toFixed(3)}s`);
+    const tire = car.currentTire;
+    return `<div class="pos-row" style="--team-color:${car.team.color}">
+      <div class="pos-num ${posClass}">${car.dnf?'DNF':pos}</div>
+      <div style="width:8px;height:8px;border-radius:50%;background:${car.team.color};flex-shrink:0;"></div>
+      <div class="pos-driver-info">
+        <div class="pos-driver-name">${car.team.driver1?.name||car.team.name}</div>
+        <div class="pos-team-name">${car.team.name}</div>
+      </div>
+      <span class="pos-tire tire-${tire}">${tire.toUpperCase()}</span>
+      ${car.pitstops.length?`<span style="font-size:10px;color:var(--text3);">P${car.pitstops.length}</span>`:''}
+      <div class="pos-gap">${gapStr}</div>
+    </div>`;
+  }).join('');
+}
+
+function addEvent(lap,cls,msg) {
+  const ticker = document.getElementById('events-ticker');
+  const el = document.createElement('div');
+  el.className = `event-line ${cls}`;
+  el.innerHTML = `<span class="lap-tag">L${lap}</span>${msg}`;
+  ticker.prepend(el);
+}
+
+function toggleRace() {
+  state.racePaused = !state.racePaused;
+  document.getElementById('btn-race-ctrl').textContent = state.racePaused?'▶ Resume':'⏸ Pause';
+  if(!state.racePaused) scheduleNextLap();
+}
+
+function skipToEnd() {
+  clearTimeout(state.raceInterval);
+  const rd = state.raceData;
+  if(!rd) return;
+  while(rd.currentLap < rd.laps && !rd.raceOver) {
+    rd.currentLap++;
+    // simplified skip
+    rd.cars.forEach(car => {
+      if(car.dnf) return;
+      car.gap -= (car.base/150 + rand(-0.3,0.3))*0.01;
+    });
+  }
+  const alive = rd.cars.filter(c=>!c.dnf).sort((a,b)=>a.gap-b.gap);
+  const dead = rd.cars.filter(c=>c.dnf);
+  [...alive,...dead].forEach((c,i)=>c.currentPos=i+1);
+  document.getElementById('race-lap-cur').textContent = rd.laps;
+  document.getElementById('race-progress').style.width='100%';
+  renderPositions();
+  finishRace();
+}
+
+function finishRace() {
+  clearTimeout(state.raceInterval);
+  state.raceRunning = false;
+  state.raceData.raceOver = true;
+  document.getElementById('race-status-label').textContent='FINISHED';
+  document.getElementById('btn-race-ctrl').textContent='⏸ Pause';
+  document.getElementById('sc-banner').classList.remove('show');
+
+  const rd = state.raceData;
+  const alive = rd.cars.filter(c=>!c.dnf).sort((a,b)=>a.gap-b.gap);
+  const dead = rd.cars.filter(c=>c.dnf);
+  const ranked = [...alive,...dead];
+
+  // Fastest lap bonus
+  const flCar = rd.cars.filter(c=>!c.dnf).sort((a,b)=>a.fastestLapTime-b.fastestLapTime)[0];
+  const flPos = flCar ? ranked.findIndex(c=>c===flCar)+1 : -1;
+
+  // Best pitstop
+  const bestPitCar = rd.cars.filter(c=>c.pitstops.length>0).sort((a,b)=>{
+    const at=Math.min(...a.pitstops.map(p=>parseFloat(p.time)));
+    const bt=Math.min(...b.pitstops.map(p=>parseFloat(p.time)));
+    return at-bt;
+  })[0];
+
+  ranked.forEach((car,i) => {
+    let pts = (!car.dnf && i<POINTS_SYS.length) ? POINTS_SYS[i] : 0;
+    if(flCar===car && !car.dnf && flPos<=10) pts+=1;
+    car.racePoints = pts;
+    car.team.points += pts;
+    car.flBonus = (flCar===car && !car.dnf);
+    car.bestPit = (bestPitCar===car);
+  });
+
+  const histEntry = {
+    track:rd.track.name, flag:rd.track.flag, weather:rd.weather.label,
+    results: ranked.map(c=>({ name:c.team.name, color:c.team.color, pts:c.racePoints, dnf:c.dnf, fl:c.flBonus, bestPit:c.bestPit, pitstops:c.pitstops.length }))
+  };
+  state.raceHistory.push(histEntry);
+  updateLB();
+
+  addEvent(rd.laps,'','🏁 CHEQUERED FLAG');
+}
+
+// ═══════════════════ RESULTS ═══════════════════
+function renderResults() {
+  if(!state.raceData?.raceOver){ document.getElementById('results-container').innerHTML='<div class="text-sm text-muted">No race has been run yet. Go to Race Setup to start.</div>'; return; }
+  const rd = state.raceData;
+  const alive = rd.cars.filter(c=>!c.dnf).sort((a,b)=>a.gap-b.gap);
+  const dead = rd.cars.filter(c=>c.dnf);
+  const ranked = [...alive,...dead];
+  const flCar = rd.cars.filter(c=>!c.dnf).sort((a,b)=>a.fastestLapTime-b.fastestLapTime)[0];
+
+  document.getElementById('results-container').innerHTML = `
+    <div class="card">
+      <div class="card-header">${rd.track.flag} ${rd.track.name} GP — Final Classification</div>
+      ${ranked.map((car,i) => {
+        const pos = i+1;
+        const posColor = pos===1?'var(--gold)':pos===2?'var(--silver)':pos===3?'var(--bronze)':'var(--text3)';
+        return `<div class="result-row">
+          <div class="res-pos" style="color:${car.dnf?'var(--accent)':posColor};min-width:32px;">${car.dnf?'DNF':pos}</div>
+          <div style="width:8px;height:8px;border-radius:50%;background:${car.team.color};flex-shrink:0;"></div>
+          <div style="flex:1;">
+            <div class="text-sm fw-600">${car.team.driver1?.name||car.team.name}</div>
+            <div class="text-xs text-muted">${car.team.name}</div>
+          </div>
+          ${car.flBonus?'<span class="pos-fastest">⚡ FL</span>':''}
+          ${car.bestPit?'<span style="font-size:10px;padding:2px 6px;background:rgba(0,144,255,0.1);border:1px solid rgba(0,144,255,0.3);border-radius:3px;color:var(--blue);">🔧 Best Stop</span>':''}
+          <div class="text-xs text-muted">${car.pitstops.length} stop${car.pitstops.length!==1?'s':''}</div>
+          <div class="res-pts">+${car.racePoints}</div>
+        </div>`;
+      }).join('')}
+    </div>`;
+}
+
+// ═══════════════════ LEADERBOARD ═══════════════════
+function updateLB() {
+  const sorted = [...state.teams].sort((a,b)=>b.points-a.points);
+  const leader = sorted[0]?.points||0;
+  document.getElementById('lb-constructors').innerHTML = sorted.map((t,i) => `
+    <div class="lb-row" style="--team-color:${t.color}">
+      <span class="lb-pos">${i+1}</span>
+      <div class="lb-dot" style="background:${t.color}"></div>
+      <span class="lb-name">${t.name}</span>
+      <span class="lb-pts">${t.points}</span>
+      ${i>0?`<span class="lb-gap">-${leader-t.points}</span>`:''}
+    </div>`).join('');
+
+  document.getElementById('lb-history').innerHTML = state.raceHistory.map((r,i) =>
+    `<div style="margin-bottom:8px;">
+      <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.08em;color:var(--text3);margin-bottom:4px;">R${i+1} ${r.flag} ${r.track}</div>
+      ${r.results.slice(0,3).map((res,j)=>`
+        <div style="display:flex;align-items:center;gap:5px;padding:2px 0;font-size:11px;">
+          <span style="color:var(--text3);min-width:14px;">${j+1}.</span>
+          <div style="width:5px;height:5px;border-radius:50%;background:${res.color};"></div>
+          <span>${res.name}</span>
+          <span style="margin-left:auto;color:var(--gold);font-family:var(--font-mono);">+${res.pts}</span>
+        </div>`).join('')}
+    </div>`).join('');
+}
+
+// ═══════════════════ TRADE DESK ═══════════════════
+function renderTradeDesk() {
+  const selA = document.getElementById('trade-team-a');
+  const selB = document.getElementById('trade-team-b');
+  const opts = `<option value="">Select...</option>` + state.teams.map(t=>`<option value="${t.id}">${t.name}</option>`).join('');
+  selA.innerHTML = opts; selB.innerHTML = opts;
+  state.tradeAssetA = null; state.tradeAssetB = null;
+  document.getElementById('trade-a-gives').textContent='Nothing selected';
+  document.getElementById('trade-b-gives').textContent='Nothing selected';
+}
+
+function renderTradeAssets() {
+  const aid = document.getElementById('trade-team-a').value;
+  const bid = document.getElementById('trade-team-b').value;
+  const teamA = state.teams.find(t=>t.id===aid);
+  const teamB = state.teams.find(t=>t.id===bid);
+  const slots = ['engine','principal','driver1','driver2','aero','strategist','pitcrew'];
+  const labels = {engine:'Engine',principal:'Principal',driver1:'Driver 1',driver2:'Driver 2',aero:'Aero',strategist:'Strategist',pitcrew:'Pit Crew'};
+  function assetList(team, side) {
+    if(!team) return '<div class="text-sm text-muted">Select a team</div>';
+    return slots.filter(s=>team[s]).map(s=>{
+      const a = team[s];
+      const sel = (side==='a'?state.tradeAssetA:state.tradeAssetB)?.id===a.id;
+      return `<div onclick="selectTradeAsset('${side}','${a.id}')" style="padding:8px;margin-bottom:6px;border:1px solid ${sel?'var(--blue)':'var(--border)'};border-radius:var(--r);cursor:pointer;background:${sel?'rgba(0,144,255,0.08)':'var(--bg3)'};">
+        <div class="text-xs text-muted">${labels[s]}</div>
+        <div class="text-sm fw-600">${a.name}</div>
+        <div class="text-xs mono" style="color:var(--gold)">$${state.prices[a.id]||0}M</div>
+      </div>`;
+    }).join('') || '<div class="text-sm text-muted">No assets</div>';
+  }
+  document.getElementById('trade-assets-a').innerHTML = assetList(teamA,'a');
+  document.getElementById('trade-assets-b').innerHTML = assetList(teamB,'b');
+}
+
+function selectTradeAsset(side, assetId) {
+  if(side==='a') state.tradeAssetA = getAsset(assetId);
+  else state.tradeAssetB = getAsset(assetId);
+  document.getElementById('trade-a-gives').textContent = state.tradeAssetA ? state.tradeAssetA.name : 'Nothing selected';
+  document.getElementById('trade-b-gives').textContent = state.tradeAssetB ? state.tradeAssetB.name : 'Nothing selected';
+  renderTradeAssets();
+}
+
+function executeTrade() {
+  if(!state.tradeAssetA||!state.tradeAssetB){ alert('Select assets from both teams.'); return; }
+  const aid = document.getElementById('trade-team-a').value;
+  const bid = document.getElementById('trade-team-b').value;
+  if(!aid||!bid||aid===bid){ alert('Select two different teams.'); return; }
+  const teamA=state.teams.find(t=>t.id===aid);
+  const teamB=state.teams.find(t=>t.id===bid);
+  const slots=['engine','principal','driver1','driver2','aero','strategist','pitcrew'];
+  let slotA=slots.find(s=>teamA[s]?.id===state.tradeAssetA.id);
+  let slotB=slots.find(s=>teamB[s]?.id===state.tradeAssetB.id);
+  if(!slotA||!slotB){ alert('Asset slot mismatch.'); return; }
+  // Swap
+  const tmp=teamA[slotA]; teamA[slotA]=teamB[slotB]; teamB[slotB]=tmp;
+  state.tradeAssetA=null; state.tradeAssetB=null;
+  alert(`✓ Trade executed: ${teamA.name} ⇄ ${teamB.name}`);
+  renderTradeDesk(); renderTeams(); updateLB();
+}
+function clearTrade() { state.tradeAssetA=null; state.tradeAssetB=null; renderTradeDesk(); }
+
+// ═══════════════════ PLAYER VIEW ═══════════════════
+function renderPlayerView() {
+  const t = TRACKS.find(x=>x.id===state.selectedTrack)||TRACKS[0];
+  const w = WEATHER_OPTIONS.find(x=>x.id===state.selectedWeather)||WEATHER_OPTIONS[0];
+  document.getElementById('player-conditions').innerHTML = `
+    <div class="card" style="margin-bottom:16px;">
+      <div style="font-family:var(--font-display);font-size:18px;font-weight:700;margin-bottom:4px;">${t.flag} ${t.name} Grand Prix</div>
+      <div class="text-sm text-muted mb-16">${t.type} circuit · ${w.label}</div>
+      <div class="cond-grid">
+        <div class="cond-card"><div class="cond-val">${t.ch.overtaking}%</div><div class="cond-lbl">Overtaking</div></div>
+        <div class="cond-card"><div class="cond-val">${t.ch.tyre_deg}%</div><div class="cond-lbl">Tyre Deg.</div></div>
+        <div class="cond-card"><div class="cond-val">${t.ch.power_dep}%</div><div class="cond-lbl">Power Dep.</div></div>
+        <div class="cond-card"><div class="cond-val">${t.ch.downforce_dep}%</div><div class="cond-lbl">Downforce</div></div>
+        <div class="cond-card"><div class="cond-val">${t.ch.sc_base}%</div><div class="cond-lbl">SC Chance</div></div>
+        <div class="cond-card"><div class="cond-val">${w.label.split(' ')[0]}</div><div class="cond-lbl">Weather</div></div>
+      </div>
+      <div class="mt-12" style="padding:10px 14px;background:var(--bg3);border-radius:var(--r);font-size:12px;color:var(--text2);">
+        <strong>Strategy tip:</strong>
+        ${t.ch.tyre_deg>75?'High tyre degradation — consider 2-stop or tyre management strategy.':''}
+        ${t.ch.downforce_dep>80?'High downforce circuit — aero package matters more than power.':''}
+        ${t.ch.power_dep>80?'Power circuit — engine strength is crucial for top speed.':''}
+        ${t.ch.sc_base>50?'High safety car probability — gamble strategies may pay off.':''}
+        ${t.ch.wet_sens>80&&w.id!=='dry'?'Weather-sensitive circuit — wet weather drivers have big advantage.':''}
+      </div>
+    </div>`;
+
+  const teams = state.teams.filter(teamComplete);
+  document.getElementById('player-strat-grid').innerHTML = `
+    <div class="card-header" style="margin-bottom:10px;">Team Strategies — Each team selects their approach</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;">
+      ${teams.map(t => {
+        const s = state.strategies[t.id]||{};
+        return `<div style="background:var(--surface);border:1px solid var(--border);border-left:3px solid ${t.color};border-radius:var(--r);padding:14px;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+            <div style="width:8px;height:8px;border-radius:50%;background:${t.color};"></div>
+            <span style="font-weight:600;font-size:13px;">${t.name}</span>
+          </div>
+          <div class="text-xs text-muted mb-8">Overall Rating: ${teamOvr(t)||'—'}</div>
+          <div class="text-xs text-muted mb-8">Current Strategy:</div>
+          <div style="font-size:13px;font-weight:600;margin-bottom:4px;">${s.strat||'Not set'}</div>
+          <div style="font-size:11px;color:${s.risk==='High'?'var(--accent)':s.risk==='Low'?'var(--green)':'var(--gold)'};">${s.risk||'—'} risk</div>
+        </div>`;
+      }).join('')}
+    </div>`;
+}
+
+// ═══════════════════ INIT ═══════════════════
+renderAssets();
+updateLB();
+</script>
+</body>
+</html>
