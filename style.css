@@ -2975,3 +2975,340 @@ label {
   .win-driver-name { font-size: 22px; }
   .podium-block { width: 82px; }
 }
+
+/* ══════════════════════════════════════════════════════════════
+   ENHANCEMENT PATCH — Staged Champion Reveal + Quality Upgrades
+══════════════════════════════════════════════════════════════ */
+
+/* ─── CHECKERED FLAG FLASH (immediate post-race) ───────────── */
+.chequered-flash-overlay {
+  position: fixed; inset: 0; z-index: 9990; pointer-events: none;
+  background: repeating-conic-gradient(#111 0% 25%, #eee 0% 50%) 0 0 / 48px 48px;
+  animation: chequeredSweep 1.5s cubic-bezier(0.4,0,0.2,1) forwards;
+}
+@keyframes chequeredSweep {
+  0%   { clip-path: inset(0 100% 0 0); opacity:0.95; }
+  38%  { clip-path: inset(0  0%  0 0); opacity:1;    }
+  72%  { clip-path: inset(0  0%  0 0); opacity:0.9;  }
+  100% { clip-path: inset(0  0% 0 100%); opacity:0;  }
+}
+
+/* ─── GOLD SCREEN FLASH (on champion name reveal) ───────────── */
+.cs-gold-flash {
+  position: fixed; inset: 0; z-index: 2999; pointer-events: none;
+  background: radial-gradient(ellipse at 50% 40%, var(--gold) 0%, transparent 70%);
+  opacity: 0.22;
+  animation: goldFlashAnim 0.75s ease-out forwards;
+}
+@keyframes goldFlashAnim {
+  0%   { opacity: 0.28; transform: scale(1); }
+  100% { opacity: 0;    transform: scale(1.1); }
+}
+
+/* ─── CHAMPION STAGED REVEAL ────────────────────────────────── */
+
+/* Every stage starts invisible */
+.cs-stage {
+  opacity: 0;
+  transform: translateY(22px);
+  transition: opacity 0.65s var(--ease), transform 0.65s var(--ease);
+  margin-bottom: 20px;
+}
+.cs-stage.cs-visible { opacity: 1; transform: translateY(0); }
+
+/* Champion name — explosive entrance */
+.cs-stage.cs-burst-in {
+  animation: csBurst 0.85s var(--ease) forwards !important;
+  opacity: 1 !important;
+  transform: none !important;
+}
+@keyframes csBurst {
+  0%   { transform: scale(0.55) translateY(10px); opacity:0; }
+  55%  { transform: scale(1.06) translateY(-3px);  opacity:1; }
+  80%  { transform: scale(0.97) translateY(0);    }
+  100% { transform: scale(1)    translateY(0); opacity:1; }
+}
+
+/* Stage 0 — "SEASON FINALE / Constructors' Championship" */
+.cs-overline {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  margin-bottom: 8px;
+}
+.cs-main-title {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  line-height: 1.18;
+  margin-bottom: 8px;
+}
+.cs-season-tag {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-3);
+  letter-spacing: 0.08em;
+  margin-bottom: 8px;
+}
+.cs-sep-line {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border-2), transparent);
+  margin: 14px 0;
+}
+
+/* Stage 2 — Runner-up */
+.cs-section-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--silver);
+  margin-bottom: 8px;
+}
+.cs-runner-up-team {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  line-height: 1.1;
+  margin-bottom: 6px;
+}
+.cs-runner-up-pts {
+  font-family: var(--font-display);
+  font-size: 30px;
+  font-weight: 900;
+  color: var(--silver);
+  line-height: 1;
+  margin-bottom: 4px;
+}
+.cs-pts-word { font-size: 14px; font-weight: 600; color: var(--text-3); letter-spacing: 0.1em; }
+.cs-gap-line { font-size: 11px; color: var(--text-3); margin-top: 2px; }
+
+/* Tension / suspense dots */
+.cs-tension-bar {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 18px;
+  padding: 20px 0 14px;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+.cs-tension-bar.cs-visible { opacity: 1; }
+.cs-td {
+  display: block;
+  width: 12px; height: 12px;
+  border-radius: 50%;
+  background: var(--gold);
+  animation: tdPulse 0.72s ease-in-out infinite;
+}
+.cs-td1 { animation-delay: 0s; }
+.cs-td2 { animation-delay: 0.24s; }
+.cs-td3 { animation-delay: 0.48s; }
+@keyframes tdPulse {
+  0%, 100% { transform: scale(0.5);  opacity: 0.3; }
+  50%      { transform: scale(1.45); opacity: 1; box-shadow: 0 0 14px var(--gold); }
+}
+
+/* Stage 4 — CHAMPION */
+.cs-champ-stage { text-align: center; }
+.cs-world-label {
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--gold);
+  text-shadow: 0 0 24px rgba(255,215,0,0.5);
+  margin-bottom: 14px;
+}
+.cs-champ-name {
+  font-family: var(--font-display);
+  font-size: 34px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  line-height: 1.1;
+  text-shadow: 0 0 50px currentColor;
+  margin-bottom: 14px;
+}
+.cs-champ-pts-big {
+  font-family: var(--font-display);
+  font-size: 58px;
+  font-weight: 900;
+  color: var(--gold);
+  line-height: 1;
+  text-shadow: 0 0 30px rgba(255,215,0,0.4);
+}
+.cs-champ-pts-sub {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  color: var(--text-3);
+  margin: 4px 0 10px;
+}
+.cs-champ-stats {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-2);
+  letter-spacing: 0.1em;
+}
+
+/* Stage 5 — Final standings */
+.cs-standings-stage {
+  border-top: 1px solid rgba(255,215,0,0.15);
+  padding-top: 16px;
+}
+.cs-final-standings { display: flex; flex-direction: column; gap: 6px; margin-bottom: 20px; }
+.cs-standing-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 14px;
+  border-radius: var(--r);
+  background: rgba(255,255,255,0.03);
+  font-size: 13px;
+}
+.cs-standing-row.cs-p1 {
+  background: rgba(255,215,0,0.07);
+  border: 1px solid rgba(255,215,0,0.2);
+}
+.cs-standing-row.cs-p2 { background: rgba(192,192,192,0.05); }
+.cs-spos {
+  min-width: 22px;
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 900;
+  color: var(--text-3);
+}
+.cs-standing-row.cs-p1 .cs-spos { color: var(--gold); }
+.cs-standing-row.cs-p2 .cs-spos { color: var(--silver); }
+.cs-standing-row.cs-p3 .cs-spos { color: var(--bronze); }
+.cs-sdot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.cs-sname { flex: 1; font-weight: 600; text-align: left; }
+.cs-spts { font-family: var(--font-mono); font-weight: 700; color: var(--gold); font-size: 14px; }
+.cs-dismiss-btn { width: 100%; justify-content: center; margin-top: 4px; font-size: 12px; }
+
+/* Popup border glow on champion reveal */
+.champion-popup.cs-champion-glow { animation: champBorderGlow 2.2s ease-in-out 4; }
+@keyframes champBorderGlow {
+  0%,100% { box-shadow: none; }
+  50%     { box-shadow: inset 0 0 0 2px rgba(255,215,0,0.35), 0 0 120px rgba(255,215,0,0.12); }
+}
+
+/* ─── PHOTO FINISH OVERLAY ──────────────────────────────────── */
+.photo-finish-overlay {
+  position: fixed; inset: 0; z-index: 999;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(4,4,8,0.82);
+  backdrop-filter: blur(6px);
+  animation: overlayIn 0.3s ease;
+}
+.photo-finish-overlay.pf-fade-out { animation: pfFadeOut 0.5s ease forwards; }
+@keyframes pfFadeOut { to { opacity: 0; } }
+.pf-card {
+  background: var(--bg-2);
+  border: 1px solid var(--border-2);
+  border-top: 3px solid var(--accent);
+  border-radius: var(--r-lg);
+  padding: 32px 36px;
+  text-align: center;
+  animation: winCardIn 0.55s var(--ease);
+}
+.pf-label {
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 20px;
+}
+.pf-p1 {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  margin-bottom: 8px;
+}
+.pf-gap {
+  font-family: var(--font-mono);
+  font-size: 32px;
+  font-weight: 900;
+  color: var(--gold);
+  margin: 6px 0;
+  letter-spacing: 0.04em;
+}
+.pf-p2 {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--text-2);
+}
+
+/* ─── LIVE FASTEST LAP HOLDER (timing tower) ────────────────── */
+.timing-row.fl-leader { background: rgba(171,71,188,0.08); }
+.timing-row.fl-leader::before { background: var(--purple) !important; }
+.t-fl-badge {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 800;
+  padding: 1px 5px;
+  background: rgba(171,71,188,0.2);
+  border: 1px solid rgba(171,71,188,0.4);
+  border-radius: var(--r-sm);
+  color: var(--purple);
+  letter-spacing: 0.05em;
+}
+
+/* Tyre cliff warning — badge flashes red when compound past cliff */
+.tire-badge.tire-warn {
+  animation: tyrWarn 1s ease-in-out infinite;
+  border: 1px solid var(--accent) !important;
+}
+@keyframes tyrWarn {
+  0%,100% { opacity: 1; }
+  50%     { opacity: 0.45; }
+}
+
+/* ─── CHAMPIONSHIP CONTENTION PANEL ────────────────────────── */
+.contention-panel {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 18px;
+  background: rgba(255,215,0,0.05);
+  border: 1px solid rgba(255,215,0,0.18);
+  border-radius: var(--r-lg);
+  margin-bottom: 16px;
+}
+.contention-icon  { font-size: 20px; flex-shrink: 0; }
+.contention-text  { flex: 1; font-size: 13px; line-height: 1.5; }
+.contention-badge {
+  padding: 4px 12px;
+  background: var(--gold-dim);
+  border: 1px solid rgba(255,215,0,0.3);
+  border-radius: var(--r-sm);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--gold);
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+.contention-badge.clinched {
+  background: var(--green-dim);
+  border-color: rgba(0,230,118,0.3);
+  color: var(--green);
+}
+
+/* ─── SEASON FINALE BADGE (calendar + round badge) ─────────── */
+.cal-finale { color: var(--gold) !important; font-weight: 700; }
+.nav-round-badge.finale-round {
+  background: var(--gold-dim);
+  border-color: rgba(255,215,0,0.35);
+  color: var(--gold);
+}

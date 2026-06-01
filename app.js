@@ -538,12 +538,16 @@ function showPage(name) {
 
 function updateRoundBadge() {
   const el = document.getElementById('nav-round-badge');
-  if (!APP.season.started) { el.textContent = 'Pre-Season'; return; }
+  if (!APP.season.started) { el.textContent = 'Pre-Season'; el.classList.remove('finale-round'); return; }
   const total = APP.season.calendar.length;
   const done  = APP.season.calendar.filter(r => r.completed).length;
+  const isFinale = APP.season.currentRound === total && !APP.season.calendar[total - 1]?.completed;
   el.textContent = done >= total
     ? `Season Complete · ${total}/${total}`
-    : `Round ${APP.season.currentRound} / ${total}`;
+    : isFinale
+      ? `FINALE · Round ${APP.season.currentRound} / ${total}`
+      : `Round ${APP.season.currentRound} / ${total}`;
+  el.classList.toggle('finale-round', isFinale);
 }
 
 function updateSidebar() {
@@ -1792,16 +1796,23 @@ function renderRaceLive() {
 
 function renderTimingTable() {
   const s      = APP.race.state;
-  const sorted = [...s.cars].sort((a,b) => {
+  const sorted = [...s.cars].sort((a, b) => {
     if (a.dnf && !b.dnf) return 1; if (b.dnf && !a.dnf) return -1;
-    if (a.dnf && b.dnf) return (b.dnfLap||0) - (a.dnfLap||0);
+    if (a.dnf && b.dnf)  return (b.dnfLap || 0) - (a.dnfLap || 0);
     return a.totalTime - b.totalTime;
   });
   const leader = sorted.find(c => !c.dnf);
-  sorted.forEach((c,i) => { if (!c.dnf) { const np=i+1; if(np!==c.position&&c.position) c._posChanged=true; c.position=np; } });
+  sorted.forEach((c, i) => { if (!c.dnf) { const np = i+1; if (np !== c.position && c.position) c._posChanged = true; c.position = np; } });
+
+  /* Current fastest-lap holder (purple highlight) */
+  let flTime = Infinity, flHolder = null;
+  s.cars.filter(c => !c.dnf).forEach(c => { if (c.fastestLap < flTime) { flTime = c.fastestLap; flHolder = c; } });
 
   const html = sorted.map(c => {
-    const tire = TIRE_COMPOUNDS[c.compound];
+    const tire     = TIRE_COMPOUNDS[c.compound];
+    const pastCliff = c.tireAge > tire.cliff;
+    const isFLLeader = flHolder && c === flHolder && s.lap > 3;
+
     let posDisplay, gapDisplay;
     if (c.dnf) {
       posDisplay = `<span class="t-pos dnf">DNF</span>`;
@@ -1809,23 +1820,27 @@ function renderTimingTable() {
     } else {
       const pcls = c.position===1?'p1':c.position===2?'p2':c.position===3?'p3':'';
       posDisplay = `<span class="t-pos ${pcls}">${c.position}</span>`;
-      gapDisplay = `<span class="t-gap">${c===leader?'LEADER':'+' + (c.totalTime-leader.totalTime).toFixed(3)}</span>`;
+      gapDisplay = `<span class="t-gap">${c===leader?'LEADER':'+' + (c.totalTime - leader.totalTime).toFixed(3)}</span>`;
     }
+
     const flash = c._posChanged ? 'pos-change' : '';
     if (c._posChanged) c._posChanged = false;
-    /* Show strategy compound sequence in timing if set */
+
     const stratLabel = c.strategyCompounds
-      ? `<span class="t-strategy">${c.strategyCompounds.join('→')}</span>`
-      : '';
-    return `<div class="timing-row ${flash}" style="--rc:${escHtml(c.teamColor)}">
+      ? `<span class="t-strategy">${c.strategyCompounds.join('→')}</span>` : '';
+    const flBadge  = isFLLeader ? `<span class="t-fl-badge">⚡FL</span>` : '';
+    const tireCls  = pastCliff && !c.dnf ? 'tire-warn' : '';
+    const rowCls   = [flash, isFLLeader ? 'fl-leader' : ''].filter(Boolean).join(' ');
+
+    return `<div class="timing-row ${rowCls}" style="--rc:${escHtml(c.teamColor)}">
       ${posDisplay}
       <span class="t-dot"></span>
       <div class="t-driver">
         <div class="t-driver-name">${escHtml(c.driverName)}</div>
         <div class="t-driver-team">${escHtml(c.teamName)}</div>
       </div>
-      <span class="tire-badge ${tire.css}">${c.compound}${c.dnf?'':` ${c.tireAge}`}</span>
-      ${stratLabel}
+      <span class="tire-badge ${tire.css} ${tireCls}">${c.compound}${c.dnf ? '' : ` ${c.tireAge}`}</span>
+      ${flBadge}${stratLabel}
       <span class="t-stops">${c.stopsDone}/${c.targetStops}</span>
       ${gapDisplay}
     </div>`;
@@ -1833,7 +1848,7 @@ function renderTimingTable() {
 
   document.getElementById('timing-table').innerHTML = html;
   document.getElementById('race-lap-disp').textContent = `Lap ${s.lap}/${s.totalLaps}`;
-  document.getElementById('race-progress').style.width = `${(s.lap/s.totalLaps)*100}%`;
+  document.getElementById('race-progress').style.width = `${(s.lap / s.totalLaps) * 100}%`;
   document.getElementById('sc-banner')?.classList.toggle('show', s.scActive);
 }
 
@@ -2038,8 +2053,14 @@ function finishRace() {
   /* Auto-push to live session if enabled */
   if (APP.sync.autoSync && APP.sync.sessionId) pushLiveSession();
 
-  /* Show winner popup (champion popup for final race) */
-  showRaceWinnerPopup(round);
+  /* Photo-finish detection — gap < 0.3 s between P1 and P2 */
+  const f1 = finishers[0], f2 = finishers[1];
+  const isSeasonDone = APP.season.calendar.every(r => r.completed);
+  if (f1 && f2 && !isSeasonDone && (f2.totalTime - f1.totalTime) < 0.3) {
+    showPhotoFinish(f1, f2, f2.totalTime - f1.totalTime, () => showRaceWinnerPopup(round));
+  } else {
+    showRaceWinnerPopup(round);
+  }
 
   renderRaceComplete(round);
   notify('🏁 Race complete','success');
@@ -3123,80 +3144,142 @@ function showRaceWinnerPopup(round) {
 }
 
 
-/* ─── 25. SEASON CHAMPION POPUP ────────────────────────────── */
+/* ─── 25. SEASON CHAMPION POPUP — STAGED CINEMATIC REVEAL ─── */
+/*
+  Timeline (all automatic, no user click needed until the end):
+  0.0 s  Checkered flag sweeps across the whole screen
+  1.5 s  Dark overlay fades in; Stage 0 (title) visible
+  3.7 s  Stage 2 (runner-up) slides in
+  5.0 s  Tension dots pulse
+  6.5 s  Tension hides → CHAMPION BURST + gold flash + confetti
+  9.5 s  Stage 5 (final standings + dismiss button) slides in
+*/
 function showSeasonChampionPopup() {
-  const drivers      = Object.entries(APP.champ.drivers).sort((a, b) => b[1].points - a[1].points);
-  const constructors = Object.entries(APP.champ.constructors).sort((a, b) => b[1].points - a[1].points);
-  const wdc = drivers[0]?.[1];
-  const wcc = constructors[0]?.[1];
+  const constructors = Object.entries(APP.champ.constructors)
+    .sort((a, b) => b[1].points - a[1].points);
+  const champion = constructors[0]?.[1];
+  const runnerUp = constructors[1]?.[1];
+  if (!champion) return;
 
+  /* ── Step 1: Checkered flag flash (immediate) ── */
+  const flagEl = document.createElement('div');
+  flagEl.className = 'chequered-flash-overlay';
+  document.body.appendChild(flagEl);
+  setTimeout(() => { flagEl.remove(); _runChampionReveal(champion, runnerUp, constructors); }, 1500);
+}
+
+function _runChampionReveal(champion, runnerUp, allConstructors) {
   const popup = document.getElementById('champion-popup');
   const card  = document.getElementById('champion-card');
+  const fwEl  = document.getElementById('champion-fireworks');
+  const ptGap = (champion.points - (runnerUp?.points || 0));
 
-  const standingsHtml = drivers.slice(0, 5).map(([k, d], i) => `
-    <div class="champion-standing-row">
-      <span class="champion-standing-pos ${i===0?'cp1':i===1?'cp2':i===2?'cp3':''}">${i + 1}</span>
-      <span class="champion-standing-dot" style="background:${escHtml(d.teamColor)}"></span>
-      <div style="flex:1;text-align:left">
-        <div class="champion-standing-name">${escHtml(d.name)}</div>
-        <div class="champion-standing-team">${escHtml(d.teamName)}</div>
-      </div>
-      <span class="champion-standing-pts">${d.points}</span>
-    </div>`).join('');
-
+  /* ── Build all stages (hidden by default) ── */
   card.innerHTML = `
-    <div class="champion-trophy">🏆</div>
-    <div class="champion-world-label">World Champion</div>
-    <div class="champion-season-name">${escHtml(APP.season.name)}</div>
+    <!-- Stage 0: Title (visible immediately) -->
+    <div class="cs-stage cs-visible" id="cs-s0">
+      <div class="cs-overline">Season Finale · ${escHtml(APP.season.name)}</div>
+      <div class="cs-main-title">Constructors'<br>Championship</div>
+      <div class="cs-sep-line"></div>
+    </div>
 
-    <div class="champion-section">
-      <div class="champion-section-label">Drivers' Champion</div>
-      <div class="champion-driver-name" style="color:${escHtml(wdc?.teamColor || '#ffd700')}">${escHtml(wdc?.name || '—')}</div>
-      <div class="champion-team-label">${escHtml(wdc?.teamName || '—')}</div>
-      <div class="champion-pts-big">${wdc?.points || 0}</div>
-      <div class="champion-pts-label">CHAMPIONSHIP POINTS</div>
-      <div class="champion-mini-stats">
-        <div class="champion-mini-stat"><span class="champion-mini-val">${wdc?.wins || 0}</span><span class="champion-mini-lbl">Wins</span></div>
-        <div class="champion-mini-stat"><span class="champion-mini-val">${wdc?.podiums || 0}</span><span class="champion-mini-lbl">Podiums</span></div>
-        <div class="champion-mini-stat"><span class="champion-mini-val">${wdc?.poles || 0}</span><span class="champion-mini-lbl">Poles</span></div>
-        <div class="champion-mini-stat"><span class="champion-mini-val">${wdc?.fl || 0}</span><span class="champion-mini-lbl">Fastest</span></div>
+    <!-- Stage 2: Runner-up -->
+    <div class="cs-stage" id="cs-s2">
+      <div class="cs-section-label">Runner-Up</div>
+      <div class="cs-runner-up-team" style="color:${escHtml(runnerUp?.color || '#888')}">
+        ${escHtml(runnerUp?.name || '—')}
+      </div>
+      <div class="cs-runner-up-pts">
+        ${runnerUp?.points || 0}<span class="cs-pts-word"> PTS</span>
+      </div>
+      <div class="cs-gap-line">${ptGap} points behind the champion</div>
+    </div>
+
+    <!-- Tension dots -->
+    <div class="cs-tension-bar" id="cs-tension">
+      <span class="cs-td cs-td1"></span>
+      <span class="cs-td cs-td2"></span>
+      <span class="cs-td cs-td3"></span>
+    </div>
+
+    <!-- Stage 4: Champion BURST -->
+    <div class="cs-stage cs-champ-stage" id="cs-s4">
+      <div class="cs-world-label">🏆 &nbsp; WORLD CHAMPIONS &nbsp; 🏆</div>
+      <div class="cs-champ-name" style="color:${escHtml(champion.color)}">
+        ${escHtml(champion.name)}
+      </div>
+      <div class="cs-champ-pts-big">${champion.points}</div>
+      <div class="cs-champ-pts-sub">CONSTRUCTOR POINTS</div>
+      <div class="cs-champ-stats">
+        ${champion.wins || 0} WINS &nbsp;·&nbsp; ${champion.podiums || 0} PODIUMS
       </div>
     </div>
 
-    <div class="champion-divider"></div>
-
-    <div class="champion-section">
-      <div class="champion-section-label">Constructors' Champions</div>
-      <div class="champion-driver-name" style="color:${escHtml(wcc?.color || '#ffd700')};font-size:20px">${escHtml(wcc?.name || '—')}</div>
-      <div class="champion-pts-big" style="font-size:26px">${wcc?.points || 0}</div>
-      <div class="champion-pts-label">CONSTRUCTOR POINTS</div>
-    </div>
-
-    <div class="champion-divider"></div>
-
-    <div class="champion-section-label" style="margin-bottom:10px">Final Drivers' Standings</div>
-    <div class="champion-standings-list">${standingsHtml}</div>
-
-    <div class="champion-countdown" id="champion-countdown">Opening in 5s…</div>
-    <button class="champion-close-btn btn btn-gold" id="champion-close-btn">🏆 View Championship</button>`;
+    <!-- Stage 5: Standings + dismiss -->
+    <div class="cs-stage cs-standings-stage" id="cs-s5">
+      <div class="cs-final-standings">
+        ${allConstructors.slice(0, Math.min(allConstructors.length, 5)).map(([id, c], i) => `
+          <div class="cs-standing-row ${i===0?'cs-p1':i===1?'cs-p2':i===2?'cs-p3':''}">
+            <span class="cs-spos">${i + 1}</span>
+            <span class="cs-sdot" style="background:${escHtml(c.color)}"></span>
+            <span class="cs-sname">${escHtml(c.name)}</span>
+            <span class="cs-spts">${c.points}</span>
+          </div>`).join('')}
+      </div>
+      <button class="btn btn-gold cs-dismiss-btn" id="champion-close-btn">
+        View Championship →
+      </button>
+    </div>`;
 
   popup.hidden = false;
-  generateConfetti('champion-fireworks', true);
-  generateFireworks('champion-fireworks');
 
-  let secs = 5;
-  const countEl = document.getElementById('champion-countdown');
-  const countInterval = setInterval(() => {
-    secs--;
-    if (secs <= 0) { clearInterval(countInterval); if (countEl) countEl.textContent = ''; }
-    else if (countEl) countEl.textContent = `Opening in ${secs}s…`;
-  }, 1000);
+  /* ── Reveal helper ── */
+  const show = (id, delay, extraClass) => setTimeout(() => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.classList.add('cs-visible');
+    if (extraClass) el.classList.add(extraClass);
+  }, delay);
 
-  document.getElementById('champion-close-btn').addEventListener('click', () => {
-    clearInterval(countInterval);
-    popup.hidden = true;
-    document.getElementById('champion-fireworks').innerHTML = '';
-    showPage('championship');
+  /* ── Timeline ── */
+  show('cs-s2', 2200);                           // runner-up slides in
+
+  setTimeout(() => {                             // tension dots at 3.5 s
+    document.getElementById('cs-tension')?.classList.add('cs-visible');
+  }, 3500);
+
+  setTimeout(() => {                             // champion burst at 5.0 s
+    document.getElementById('cs-tension')?.classList.remove('cs-visible');
+
+    /* Gold screen flash */
+    const flash = document.createElement('div');
+    flash.className = 'cs-gold-flash';
+    document.body.appendChild(flash);
+    setTimeout(() => flash.remove(), 750);
+
+    /* Champion stage bursts in */
+    const s4 = document.getElementById('cs-s4');
+    if (s4) { s4.classList.add('cs-visible', 'cs-burst-in'); }
+
+    /* Confetti + fireworks */
+    generateConfetti('champion-fireworks', true);
+    generateFireworks('champion-fireworks');
+
+    /* Popup border pulses gold */
+    popup.classList.add('cs-champion-glow');
+  }, 5000);
+
+  show('cs-s5', 9500);                           // standings + dismiss button
+
+  /* ── Dismiss handler ── */
+  popup.addEventListener('click', function onDismiss(e) {
+    if (e.target.id === 'champion-close-btn' || e.target.closest?.('#champion-close-btn')) {
+      popup.removeEventListener('click', onDismiss);
+      popup.hidden = true;
+      popup.classList.remove('cs-champion-glow');
+      if (fwEl) fwEl.innerHTML = '';
+      showPage('championship');
+    }
   });
 }
 
@@ -3513,3 +3596,157 @@ if (document.readyState === 'loading') {
   init();
 }
 /* ─── END OF PART 6 — app.js complete ───────────────────── */
+
+/* ══════════════════════════════════════════════════════════════
+   ENHANCEMENT PATCH — New helpers + upgraded Championship page
+══════════════════════════════════════════════════════════════ */
+
+/* ─── PHOTO FINISH ─────────────────────────────────────────── */
+function showPhotoFinish(p1, p2, gap, callback) {
+  const el = document.createElement('div');
+  el.className = 'photo-finish-overlay';
+  el.innerHTML = `
+    <div class="pf-card">
+      <div class="pf-label">📸 PHOTO FINISH</div>
+      <div class="pf-p1" style="color:${escHtml(p1.teamColor)}">${escHtml(p1.driverName)}</div>
+      <div class="pf-gap">${gap.toFixed(3)}s</div>
+      <div class="pf-p2" style="color:${escHtml(p2.teamColor)}">${escHtml(p2.driverName)}</div>
+    </div>`;
+  document.body.appendChild(el);
+  setTimeout(() => {
+    el.classList.add('pf-fade-out');
+    setTimeout(() => { el.remove(); callback?.(); }, 500);
+  }, 2600);
+}
+
+/* ─── UPGRADED renderChampionship ─────────────────────────── */
+/*
+  Overrides the version in Part 5-A.
+  Additions:
+  • Constructor title-contention panel (points gap, races remaining,
+    clinch status)
+  • Season finale badge on the last round tab
+  • Constructors' standings moved above Drivers' for prominence
+*/
+function renderChampionship() {
+  const drivers      = Object.entries(APP.champ.drivers).sort((a, b) => b[1].points - a[1].points);
+  const constructors = Object.entries(APP.champ.constructors).sort((a, b) => b[1].points - a[1].points);
+  const completedRounds  = APP.season.calendar.map((r, i) => r.completed ? (i + 1) : null).filter(Boolean);
+  const racesRemaining   = APP.season.calendar.filter(r => !r.completed).length;
+  const totalRaces       = APP.season.calendar.length;
+  const maxPtsPerRace    = POINTS_SYS[0] + FL_BONUS;          // 25 + 1 = 26 per driver
+  const maxConstructorPR = maxPtsPerRace * 2;                  // two drivers per team
+
+  /* Contention logic */
+  let contentionHtml = '';
+  if (constructors.length >= 2) {
+    const [, c1] = constructors[0];
+    const [, c2] = constructors[1];
+    const gap             = c1.points - c2.points;
+    const remainingForP2  = racesRemaining * maxConstructorPR;
+    const isClinched      = gap > remainingForP2;
+    const ptsNeeded       = isClinched ? 0 : (remainingForP2 - gap + 1);
+
+    if (totalRaces > 0 && completedRounds.length > 0) {
+      if (isClinched) {
+        contentionHtml = `
+          <div class="contention-panel">
+            <span class="contention-icon">🏆</span>
+            <div class="contention-text">
+              <strong style="color:${escHtml(c1.color)}">${escHtml(c1.name)}</strong>
+              have clinched the Constructors' Championship with ${racesRemaining} race${racesRemaining===1?'':'s'} to go.
+            </div>
+            <span class="contention-badge clinched">CHAMPION</span>
+          </div>`;
+      } else if (racesRemaining > 0) {
+        contentionHtml = `
+          <div class="contention-panel">
+            <span class="contention-icon">🔥</span>
+            <div class="contention-text">
+              <strong style="color:${escHtml(c2.color)}">${escHtml(c2.name)}</strong>
+              trail by <strong>${gap} pts</strong> with ${racesRemaining} race${racesRemaining===1?'':'s'} remaining
+              (${remainingForP2} pts available).
+              They need <strong>${ptsNeeded} pts</strong> more than ${escHtml(c1.name)} to take the title.
+            </div>
+            <span class="contention-badge">${gap} PTS BEHIND</span>
+          </div>`;
+      }
+    }
+  }
+
+  /* Table rows */
+  const conRows = constructors.map(([id, c], i) => `<tr>
+    <td class="champ-pos">${i + 1}</td>
+    <td><span class="champ-dot" style="background:${escHtml(c.color)}"></span>${escHtml(c.name)}</td>
+    <td class="mono">${c.wins || 0}</td>
+    <td class="mono">${c.podiums || 0}</td>
+    <td class="champ-pts">${c.points}</td>
+  </tr>`).join('');
+
+  const drvRows = drivers.map(([k, d], i) => `<tr>
+    <td class="champ-pos">${i + 1}</td>
+    <td><span class="champ-dot" style="background:${escHtml(d.teamColor)}"></span>${escHtml(d.name)}</td>
+    <td class="text-muted text-xs">${escHtml(d.teamName)}</td>
+    <td class="mono">${d.wins || 0}</td>
+    <td class="mono">${d.podiums || 0}</td>
+    <td class="mono">${d.poles || 0}</td>
+    <td class="mono">${d.fl || 0}</td>
+    <td class="mono text-accent">${d.dnfs || 0}</td>
+    <td class="champ-pts">${d.points}</td>
+  </tr>`).join('');
+
+  /* Race-by-race matrix */
+  const matrixHeader = completedRounds.map(r => {
+    const rt      = TRACKS.find(t => t.id === APP.season.calendar[r - 1].trackId);
+    const isLast  = r === totalRaces;
+    return `<th ${isLast ? 'style="color:var(--gold)"' : ''}>${rt?.flag || ''} R${r}</th>`;
+  }).join('');
+
+  const matrixRows = drivers.map(([k, d]) => {
+    const cells = completedRounds.map(r => {
+      const h = (d.history || []).find(x => x.round === r);
+      if (!h) return '<td class="text-dim">—</td>';
+      if (h.dnf) return `<td class="text-accent mono text-xs">DNF</td>`;
+      const pCls = h.finishPos === 1 ? 'text-gold' : h.finishPos <= 3 ? 'text-green' : '';
+      return `<td class="mono ${pCls}">P${h.finishPos}<br><span class="text-dim" style="font-size:10px">+${h.points}</span></td>`;
+    }).join('');
+    return `<tr>
+      <td><span class="champ-dot" style="background:${escHtml(d.teamColor)}"></span>${escHtml(d.name)}</td>
+      ${cells}
+      <td class="champ-pts">${d.points}</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('championship-content').innerHTML = `
+    ${contentionHtml}
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title" style="color:var(--gold)">Constructors' Championship</div>
+        <table class="champ-table">
+          <thead><tr><th>Pos</th><th>Team</th><th>W</th><th>Pod</th><th>Pts</th></tr></thead>
+          <tbody>${conRows || '<tr><td colspan="5" class="text-dim text-center">No data</td></tr>'}</tbody>
+        </table>
+      </div>
+      <div class="card">
+        <div class="card-title">Drivers' Championship</div>
+        <table class="champ-table">
+          <thead><tr><th>Pos</th><th>Driver</th><th>Team</th><th>W</th><th>Pod</th><th>Pole</th><th>FL</th><th>DNF</th><th>Pts</th></tr></thead>
+          <tbody>${drvRows || '<tr><td colspan="9" class="text-dim text-center">No data</td></tr>'}</tbody>
+        </table>
+      </div>
+    </div>
+
+    ${completedRounds.length ? `
+    <div class="card">
+      <div class="card-title">Race-by-Race Results</div>
+      <div style="overflow-x:auto">
+        <table class="champ-table">
+          <thead><tr><th>Driver</th>${matrixHeader}<th>Total</th></tr></thead>
+          <tbody>${matrixRows}</tbody>
+        </table>
+      </div>
+    </div>` : ''}`;
+}
+
+/* ─── END OF ENHANCEMENT PATCH ──────────────────────────────── */
