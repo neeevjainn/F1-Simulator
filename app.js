@@ -1013,19 +1013,74 @@ function renderSeason() {
   document.getElementById('season-rounds').value = rounds;
   document.getElementById('lock-season-btn').hidden   = APP.season.started;
   document.getElementById('unlock-season-btn').hidden = !APP.season.started;
+
+  /* Build the right-hand track picker card only once */
+  const trackCard = document.querySelector('#page-season .card:last-child');
+  if (trackCard && !document.getElementById('track-search-input')) {
+    const uniqueTypes = [...new Set(TRACKS.map(t => t.type))].sort();
+    const typeOpts    = uniqueTypes.map(tp =>
+      `<option value="${escHtml(tp)}">${escHtml(tp)}</option>`).join('');
+
+    trackCard.innerHTML = `
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+        <span class="card-title" style="margin-bottom:0">Assign Circuits</span>
+        <span id="track-count-badge" class="track-count-badge">0 / ${TRACKS.length} selected</span>
+      </div>
+      <div class="track-controls">
+        <input type="text" id="track-search-input" class="track-search"
+               placeholder="🔍 Search…" autocomplete="off" />
+        <select id="track-type-filter" class="track-type-sel">
+          <option value="all">All types</option>${typeOpts}
+        </select>
+        <button class="btn btn-ghost btn-xs" id="track-clear-btn">Clear all</button>
+      </div>
+      <div class="track-grid-scroll">
+        <div id="season-track-grid" class="track-grid"></div>
+      </div>`;
+
+    document.getElementById('track-search-input').addEventListener('input',  renderTrackGrid);
+    document.getElementById('track-type-filter').addEventListener('change', renderTrackGrid);
+    document.getElementById('track-clear-btn').addEventListener('click', () => {
+      APP.season.selectedTrackIds = [];
+      document.getElementById('season-rounds').value = 0;
+      renderTrackGrid();
+      updateCalendarPreview();
+    });
+  }
+
   renderTrackGrid();
   updateCalendarPreview();
 }
 function renderTrackGrid() {
-  const grid = document.getElementById('season-track-grid');
-  grid.innerHTML = TRACKS.map(t => {
+  const grid     = document.getElementById('season-track-grid');
+  const search   = (document.getElementById('track-search-input')?.value || '').toLowerCase();
+  const typeFilter = document.getElementById('track-type-filter')?.value || 'all';
+
+  const filtered = TRACKS.filter(t => {
+    const matchesText = !search ||
+      t.name.toLowerCase().includes(search) ||
+      t.country.toLowerCase().includes(search) ||
+      t.type.toLowerCase().includes(search);
+    const matchesType = typeFilter === 'all' || t.type.toLowerCase().includes(typeFilter.toLowerCase());
+    return matchesText && matchesType;
+  });
+
+  const selectedCount = APP.season.selectedTrackIds.length;
+
+  grid.innerHTML = filtered.length ? filtered.map(t => {
     const active = APP.season.selectedTrackIds.includes(t.id);
-    return `<div class="track-card ${active?'active':''}" data-track="${t.id}">
+    return `<div class="track-card ${active ? 'active' : ''}" data-track="${t.id}" title="${escHtml(t.country)} · ${escHtml(t.type)} · ${t.laps} laps">
       <div class="track-flag">${t.flag}</div>
       <div class="track-name">${escHtml(t.name)}</div>
       <div class="track-type">${escHtml(t.type)}</div>
+      ${active ? '<div class="track-selected-tick">✓</div>' : ''}
     </div>`;
-  }).join('');
+  }).join('') : `<div class="text-dim text-sm" style="grid-column:1/-1;padding:12px">No circuits match your filter.</div>`;
+
+  /* Update the count badge */
+  const badge = document.getElementById('track-count-badge');
+  if (badge) badge.textContent = `${selectedCount} / ${TRACKS.length} selected`;
+
   grid.querySelectorAll('[data-track]').forEach(c =>
     c.addEventListener('click', () => toggleTrackInCalendar(c.dataset.track)));
 }

@@ -3534,3 +3534,83 @@ label {
 @media (max-width: 700px) {
   .guide-grid-2 { grid-template-columns: 1fr; }
 }
+
+/* ══════════════════════════════════════════════════════════════
+   TRACK PICKER UPGRADES — search · filter · count badge · scroll
+══════════════════════════════════════════════════════════════ */
+
+/* Count badge next to "Assign Circuits" title */
+.track-count-badge {
+  padding: 3px 10px;
+  background: var(--accent-dim);
+  border: 1px solid rgba(232,0,45,0.25);
+  border-radius: 20px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--accent);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* Controls row: search + type dropdown + clear */
+.track-controls {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+.track-search {
+  flex: 1;
+  min-width: 140px;
+  padding: 7px 10px;
+  font-size: 12px;
+  background: var(--bg-3);
+  border: 1px solid var(--border-2);
+  border-radius: var(--r);
+  color: var(--text);
+}
+.track-search:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-dim);
+}
+.track-type-sel {
+  flex-shrink: 0;
+  padding: 7px 10px;
+  font-size: 11px;
+  background: var(--bg-3);
+  border: 1px solid var(--border-2);
+  border-radius: var(--r);
+  color: var(--text-2);
+  max-width: 160px;
+}
+
+/* Scrollable container — shows ~4 rows then scrolls */
+.track-grid-scroll {
+  max-height: 420px;
+  overflow-y: auto;
+  padding-right: 4px;   /* room for scrollbar */
+  border-radius: var(--r-sm);
+}
+.track-grid-scroll::-webkit-scrollbar       { width: 5px; }
+.track-grid-scroll::-webkit-scrollbar-track { background: transparent; }
+.track-grid-scroll::-webkit-scrollbar-thumb { background: var(--bg-5); border-radius: 3px; }
+
+/* Selected tick on track cards */
+.track-selected-tick {
+  position: absolute;
+  top: 5px; right: 6px;
+  font-size: 11px;
+  font-weight: 900;
+  color: var(--accent);
+  line-height: 1;
+}
+.track-card { position: relative; }   /* needed for absolute tick */
+
+/* On smaller viewports */
+@media (max-width: 700px) {
+  .track-grid-scroll { max-height: 300px; }
+  .track-controls    { flex-direction: column; }
+}
