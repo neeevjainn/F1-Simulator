@@ -10,6 +10,7 @@
 
 /* ─── 1. CONSTANTS ─────────────────────────────────────────── */
 const TRACKS = [
+  /* ── Original 15 ─────────────────────────────────────────── */
   { id:'t1',  name:'Monaco',            flag:'🇲🇨', country:'Monaco',       type:'Street',       baseLap:74.2,  laps:78, ch:{ overtaking:10, tyre_deg:40, power_dep:45, downforce_dep:95, sc_base:55, wet_sens:60 } },
   { id:'t2',  name:'Monza',             flag:'🇮🇹', country:'Italy',        type:'Power',        baseLap:79.3,  laps:53, ch:{ overtaking:85, tyre_deg:50, power_dep:95, downforce_dep:30, sc_base:40, wet_sens:65 } },
   { id:'t3',  name:'Spa-Francorchamps', flag:'🇧🇪', country:'Belgium',      type:'Mixed',        baseLap:105.7, laps:44, ch:{ overtaking:70, tyre_deg:70, power_dep:75, downforce_dep:65, sc_base:50, wet_sens:95 } },
@@ -25,6 +26,79 @@ const TRACKS = [
   { id:'t13', name:'Melbourne',         flag:'🇦🇺', country:'Australia',    type:'Street',       baseLap:79.8,  laps:58, ch:{ overtaking:40, tyre_deg:55, power_dep:60, downforce_dep:80, sc_base:50, wet_sens:70 } },
   { id:'t14', name:'Shanghai',          flag:'🇨🇳', country:'China',        type:'Technical',    baseLap:94.7,  laps:56, ch:{ overtaking:55, tyre_deg:70, power_dep:68, downforce_dep:75, sc_base:35, wet_sens:70 } },
   { id:'t15', name:'Baku',              flag:'🇦🇿', country:'Azerbaijan',   type:'Street/Power', baseLap:101.8, laps:51, ch:{ overtaking:65, tyre_deg:50, power_dep:78, downforce_dep:72, sc_base:60, wet_sens:55 } },
+
+  /* ── 9 new circuits — completing the full 24-race calendar ── */
+
+  /*
+   * Miami International Autodrome  (Hard Rock Stadium, Florida)
+   * Wide street circuit, three DRS zones, tight middle sector. Smooth
+   * tarmac keeps tyre wear moderate. Night-race lighting since 2024.
+   */
+  { id:'t16', name:'Miami',             flag:'🇺🇸', country:'USA',          type:'Street/Power', baseLap:90.3,  laps:57, ch:{ overtaking:55, tyre_deg:65, power_dep:75, downforce_dep:70, sc_base:45, wet_sens:60 } },
+
+  /*
+   * Imola  (Autodromo Enzo e Dino Ferrari, Emilia Romagna)
+   * Narrow, old-school layout, minimal run-offs, walls everywhere.
+   * Extremely hard to overtake. Weather is unpredictable.
+   */
+  { id:'t17', name:'Imola',             flag:'🇮🇹', country:'Italy',        type:'Technical',    baseLap:76.5,  laps:63, ch:{ overtaking:25, tyre_deg:60, power_dep:55, downforce_dep:82, sc_base:45, wet_sens:85 } },
+
+  /*
+   * Circuit Gilles Villeneuve  (Montreal, Canada)
+   * Power circuit defined by long straights and a brutal chicane.
+   * Walls of Champions awaits any mistake. Variable weather, highest
+   * SC probability in the calendar outside Singapore.
+   */
+  { id:'t18', name:'Montréal',          flag:'🇨🇦', country:'Canada',       type:'Street/Power', baseLap:73.0,  laps:70, ch:{ overtaking:65, tyre_deg:50, power_dep:82, downforce_dep:55, sc_base:55, wet_sens:75 } },
+
+  /*
+   * Circuit de Barcelona-Catalunya  (Spain)
+   * Classic all-rounder favoured for testing. Extremely hard to
+   * overtake due to dirty air, but setup is punishing and tyre
+   * degradation is very high on front-left.
+   */
+  { id:'t19', name:'Barcelona',         flag:'🇪🇸', country:'Spain',        type:'Balanced',     baseLap:82.0,  laps:66, ch:{ overtaking:40, tyre_deg:82, power_dep:68, downforce_dep:82, sc_base:20, wet_sens:70 } },
+
+  /*
+   * Red Bull Ring  (Spielberg, Austria)
+   * Short, fast and hilly. One of the shortest laps on the calendar.
+   * Excellent racing at Turns 3 & 4. Weather changes rapidly in the
+   * Styrian mountains — rain is always possible.
+   */
+  { id:'t20', name:'Red Bull Ring',     flag:'🇦🇹', country:'Austria',      type:'Power',        baseLap:65.2,  laps:71, ch:{ overtaking:60, tyre_deg:60, power_dep:88, downforce_dep:62, sc_base:28, wet_sens:85 } },
+
+  /*
+   * Hungaroring  (Budapest, Hungary)
+   * Twisty, claustrophobic — nicknamed "Monaco without the barriers"
+   * for its overtaking difficulty. Highest downforce requirement of any
+   * dry-weather circuit. Tyres blister heavily in summer heat.
+   */
+  { id:'t21', name:'Hungaroring',       flag:'🇭🇺', country:'Hungary',      type:'Technical',    baseLap:79.2,  laps:70, ch:{ overtaking:22, tyre_deg:75, power_dep:52, downforce_dep:92, sc_base:20, wet_sens:72 } },
+
+  /*
+   * Circuit of the Americas  (Austin, Texas — COTA)
+   * Anti-clockwise descending run to Turn 1, iconic Esses, and a bus-
+   * stop chicane. Excellent racing. Bumpy surface punishes car
+   * balance and eats tyres. Can get heavy rain in autumn.
+   */
+  { id:'t22', name:'Austin (COTA)',     flag:'🇺🇸', country:'USA',          type:'Mixed',        baseLap:96.5,  laps:56, ch:{ overtaking:68, tyre_deg:78, power_dep:68, downforce_dep:72, sc_base:28, wet_sens:72 } },
+
+  /*
+   * Las Vegas Street Circuit  (The Strip, Nevada)
+   * Longest circuit since Spa-era Francorchamps. Brutal 1.2 km
+   * Koval Boulevard straight. Cold night temperatures reduce tyre
+   * deg significantly. Street surface is ultra-smooth. Power is king.
+   */
+  { id:'t23', name:'Las Vegas',         flag:'🇺🇸', country:'USA',          type:'Street/Power', baseLap:95.2,  laps:50, ch:{ overtaking:62, tyre_deg:38, power_dep:88, downforce_dep:58, sc_base:52, wet_sens:30 } },
+
+  /*
+   * Lusail International Circuit  (Qatar)
+   * Fast, flowing night circuit with no room for error. Exceptionally
+   * brutal on tyres — highest thermal tyre degradation of any venue.
+   * Limited overtaking zones despite high speed. Desert conditions
+   * mean rain is essentially unheard-of.
+   */
+  { id:'t24', name:'Lusail',            flag:'🇶🇦', country:'Qatar',        type:'High-Speed',   baseLap:84.0,  laps:57, ch:{ overtaking:38, tyre_deg:88, power_dep:72, downforce_dep:78, sc_base:22, wet_sens:18 } },
 ];
 
 const WEATHER_OPTIONS = [
@@ -475,6 +549,7 @@ const ADMIN_TABS = [
   { id:'analytics',    label:'Analytics'     },
   { id:'trade',        label:'Trade Desk'    },
   { id:'admin',        label:'Admin ⚙'       },
+  { id:'guide',        label:'Guide 📖'      },
 ];
 const USER_TABS = [
   { id:'dashboard',    label:'Dashboard'     },
@@ -483,6 +558,7 @@ const USER_TABS = [
   { id:'championship', label:'Championship'  },
   { id:'analytics',    label:'Analytics'     },
   { id:'trade',        label:'Trade Desk'    },
+  { id:'guide',        label:'Guide 📖'      },
 ];
 
 function buildNav() {
@@ -520,6 +596,7 @@ const PAGE_RENDERERS = {
   analytics:    renderAnalytics,
   trade:        renderTrade,
   admin:        renderAdmin,
+  guide:        renderGuide,
 };
 
 function showPage(name) {
@@ -2109,20 +2186,31 @@ function renderResults() {
   const weather  = WEATHER_OPTIONS.find(w => w.id === round.weatherId);
   const r        = round.raceResults;
 
+  const isAdmin = APP.session.role === 'admin';
   const rows = r.classification.map((c, i) => {
     const badges = [];
+    if (c.dsq)       badges.push('<span class="r-badge r-dsq">DSQ</span>');
     if (c.isFL)      badges.push('<span class="r-badge r-fl">FL</span>');
     if (c.isBestPit) badges.push('<span class="r-badge r-best-pit">BEST PIT</span>');
     if (c.dnf)       badges.push('<span class="r-badge r-dnf">DNF</span>');
-    return `<div class="result-row" style="border-left:3px solid ${escHtml(c.teamColor)};padding-left:13px">
-      <span class="res-pos">${c.dnf ? 'DNF' : c.position}</span>
+    const dsqBtn = isAdmin && !c.dnf
+      ? `<button class="btn btn-ghost btn-xs dsq-toggle-btn"
+           data-round="${selected - 1}" data-driver-id="${escHtml(c.driverId)}"
+           title="${c.dsq ? 'Reverse disqualification' : 'Disqualify driver'}"
+           style="color:${c.dsq ? 'var(--green)' : 'var(--accent)'}">
+           ${c.dsq ? '↩ Un-DSQ' : '⛔ DSQ'}
+         </button>`
+      : '';
+    return `<div class="result-row" style="border-left:3px solid ${escHtml(c.dsq ? '#555' : c.teamColor)};padding-left:13px;${c.dsq ? 'opacity:0.55' : ''}">
+      <span class="res-pos" style="${c.dsq ? 'text-decoration:line-through;color:var(--text-3)' : ''}">${c.dnf ? 'DNF' : c.position}</span>
       <div>
         <div class="fw-700 text-sm">${escHtml(c.driverName)}</div>
         <div class="text-xs text-muted">${escHtml(c.teamName)} · started P${c.startPos}${c.dnf ? ` · ${escHtml(c.dnfReason || '')}` : ''}</div>
       </div>
       <div class="result-badges">${badges.join('')}</div>
       ${!c.dnf ? `<span class="text-xs mono text-muted">${fmtTime(c.fastestLap)}</span>` : ''}
-      <span class="res-pts">${c.points}</span>
+      <span class="res-pts" style="${c.dsq ? 'text-decoration:line-through;color:var(--text-3)' : ''}">${c.dsq ? 0 : c.points}</span>
+      ${dsqBtn}
     </div>`;
   }).join('');
 
@@ -2180,6 +2268,25 @@ function renderResults() {
     renderResults();
   });
   document.getElementById('results-print-btn').addEventListener('click', () => printRaceResults(selected));
+  /* DSQ toggle buttons (admin only) */
+  document.querySelectorAll('.dsq-toggle-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const ri  = parseInt(btn.dataset.roundIndex || btn.dataset.round, 10);
+      const did = btn.dataset.driverId;
+      openModal({
+        title: btn.textContent.trim().startsWith('↩') ? 'Reverse DSQ?' : 'Disqualify Driver?',
+        body:  btn.textContent.trim().startsWith('↩')
+          ? `<div class="text-sm">Restore this driver's championship points from Round ${ri + 1}?</div>`
+          : `<div class="text-sm">This will remove all championship points earned by this driver in Round ${ri + 1}.<br><br>Use Chair discretion — this cannot be automatically reversed without an undo.</div>`,
+        actions: [
+          { label:'Cancel',    cls:'btn-ghost', onClick: closeModal },
+          { label: btn.textContent.trim().startsWith('↩') ? 'Restore' : 'Disqualify',
+            cls: btn.textContent.trim().startsWith('↩') ? 'btn-green' : 'btn-red',
+            onClick: () => { closeModal(); applyDSQ(ri, did); } },
+        ],
+      });
+    });
+  });
 }
 
 function printRaceResults(roundIdx) {
@@ -2815,15 +2922,22 @@ function renderAdmin() {
 
   /* Sync buttons */
   document.getElementById('sync-gen-url-btn')?.addEventListener('click', () => {
-    const url      = generateShareLink();
-    const preview  = document.getElementById('sync-url-preview');
-    const qrWrapper = document.getElementById('sync-url-qr');
-    preview.textContent = url.length > 80 ? url.slice(0, 78) + '…' : url;
-    preview.title = url;
-    preview.dataset.fullUrl = url;
-    qrWrapper.hidden = false;
-    qrWrapper.innerHTML = `<img src="${getQRCodeURL(url)}" alt="QR Code" />`;
-    notify('Share link ready — copy it above', 'success');
+    try {
+      const url      = generateShareLink();
+      const preview  = document.getElementById('sync-url-preview');
+      const qrWrapper = document.getElementById('sync-url-qr');
+      preview.textContent       = url.length > 80 ? url.slice(0, 78) + '…' : url;
+      preview.title             = url;
+      preview.dataset.fullUrl   = url;
+      preview.style.color       = 'var(--green)';
+      qrWrapper.hidden = false;
+      qrWrapper.innerHTML = `<img src="${getQRCodeURL(url)}" alt="QR Code" onerror="this.style.display='none'" />`;
+      notify('✓ Share link ready — copy or scan the QR', 'success');
+    } catch(err) {
+      notify('⚠ Could not generate link: ' + err.message, 'error');
+      const preview = document.getElementById('sync-url-preview');
+      if (preview) { preview.textContent = '⚠ ' + err.message; preview.style.color = 'var(--accent)'; }
+    }
   });
   document.getElementById('sync-copy-url-btn')?.addEventListener('click', () => {
     const url = document.getElementById('sync-url-preview')?.dataset.fullUrl;
@@ -3355,35 +3469,80 @@ function getQRCodeURL(text) {
 }
 
 /* Compress state into a URL-safe hash */
+/* Trimmed snapshot for URL sharing — strips large arrays */
+function getTrimmedShareSnapshot() {
+  const snap = JSON.parse(JSON.stringify(getPublicStateSnapshot())); // deep copy
+  /* Remove FP lap-time arrays (hundreds of floats per driver) */
+  if (snap.fpData?.byDriver) {
+    snap.fpData.byDriver = snap.fpData.byDriver.map(d => ({
+      ...d, stints: d.stints.map(({ lapTimes, ...rest }) => rest),
+    }));
+  }
+  /* Remove per-race event logs (can be 200+ entries each) */
+  if (snap.season?.calendar) {
+    snap.season.calendar = snap.season.calendar.map(r =>
+      r.raceResults ? { ...r, raceResults: { ...r.raceResults, events: [] } } : r
+    );
+  }
+  return snap;
+}
+
+/* Robust base64 encoder that handles full Unicode */
+function _b64encode(str) {
+  const bytes  = new TextEncoder().encode(str);
+  const binary = Array.from(bytes, b => String.fromCharCode(b)).join('');
+  return btoa(binary);
+}
+function _b64decode(b64) {
+  const binary = atob(b64);
+  const bytes  = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return new TextDecoder().decode(bytes);
+}
+
 function generateShareLink() {
-  const json = JSON.stringify(getPublicStateSnapshot());
+  const snap = getTrimmedShareSnapshot();
+  const json = JSON.stringify(snap);
   let encoded;
   if (typeof LZString !== 'undefined') {
     encoded = LZString.compressToEncodedURIComponent(json);
+    if (!encoded) throw new Error('LZString returned empty — try refreshing the page');
   } else {
-    encoded = btoa(unescape(encodeURIComponent(json)));
+    /* LZString CDN not loaded; fall back to straight base64 */
+    encoded = _b64encode(json);
   }
   return `${location.origin}${location.pathname}#sync=${encoded}`;
 }
 
-/* Attempt to load state from the URL hash */
+/* Attempt to load state from the URL hash on page open */
 function loadFromShareHash() {
   const hash = location.hash;
   if (!hash.startsWith('#sync=')) return false;
   try {
     const encoded = hash.slice(6);
-    let json;
+    let json = null;
+    /* Try LZString first */
     if (typeof LZString !== 'undefined') {
       json = LZString.decompressFromEncodedURIComponent(encoded);
-    } else {
+    }
+    /* Fall back to base64 */
+    if (!json) {
+      try { json = _b64decode(encoded); } catch(_) {}
+    }
+    /* Legacy atob fallback */
+    if (!json) {
       json = decodeURIComponent(escape(atob(encoded)));
     }
-    if (!json) throw new Error('Decompression failed');
+    if (!json) throw new Error('Could not decompress state');
     applyStateSnapshot(JSON.parse(json));
     history.replaceState(null, '', location.pathname + location.search);
     notify('✓ State loaded from share link', 'success');
     return true;
-  } catch(e) { console.warn('Share hash error:', e); return false; }
+  } catch(e) {
+    console.warn('Share hash error:', e);
+    notify('Invalid or expired share link: ' + e.message, 'error');
+    return false;
+  }
 }
 
 /* Create a new JSONBlob session */
@@ -3750,3 +3909,371 @@ function renderChampionship() {
 }
 
 /* ─── END OF ENHANCEMENT PATCH ──────────────────────────────── */
+
+/* ══════════════════════════════════════════════════════════════
+   REFINEMENT PATCH — DSQ · Guide · Live Sync fixes
+══════════════════════════════════════════════════════════════ */
+
+/* ─── DRIVER DISQUALIFICATION ──────────────────────────────── */
+/*
+  Toggling DSQ on a non-DNF finisher:
+  • Applying  → removes points, marks entry.dsq = true, stores originals
+  • Reversing → restores points, clears dsq flag
+  Championship standings are updated immediately either way.
+*/
+function applyDSQ(roundIdx, driverId) {
+  const round = APP.season.calendar[roundIdx];
+  if (!round?.raceResults) { notify('No race results for this round', 'warn'); return; }
+
+  const cls   = round.raceResults.classification;
+  const entry = cls.find(c => c.driverId === driverId);
+  if (!entry) { notify('Driver not found in classification', 'error'); return; }
+  if (entry.dnf) { notify('Cannot DSQ a driver who already retired (DNF)', 'warn'); return; }
+
+  const dk = driverKey(entry.teamId, entry.slot);
+
+  if (entry.dsq) {
+    /* ── Reverse DSQ ── */
+    const restore = entry.dsqOriginalPoints ?? 0;
+    entry.points          = restore;
+    entry.basePoints      = entry.dsqOriginalBase ?? restore;
+    entry.flPoints        = entry.dsqOriginalFL   ?? 0;
+    entry.dsq             = false;
+    delete entry.dsqOriginalPoints;
+    delete entry.dsqOriginalBase;
+    delete entry.dsqOriginalFL;
+
+    if (APP.champ.drivers[dk])
+      APP.champ.drivers[dk].points += restore;
+    if (APP.champ.constructors[entry.teamId])
+      APP.champ.constructors[entry.teamId].points += restore;
+
+    notify(`↩ DSQ reversed — ${entry.driverName} restored (+${restore} pts)`, 'success');
+  } else {
+    /* ── Apply DSQ ── */
+    entry.dsqOriginalPoints = entry.points;
+    entry.dsqOriginalBase   = entry.basePoints;
+    entry.dsqOriginalFL     = entry.flPoints;
+    const removed = entry.points;
+    entry.points     = 0;
+    entry.basePoints = 0;
+    entry.flPoints   = 0;
+    entry.dsq        = true;
+
+    if (APP.champ.drivers[dk])
+      APP.champ.drivers[dk].points = Math.max(0, APP.champ.drivers[dk].points - removed);
+    if (APP.champ.constructors[entry.teamId])
+      APP.champ.constructors[entry.teamId].points = Math.max(0, APP.champ.constructors[entry.teamId].points - removed);
+
+    notify(`⛔ ${entry.driverName} disqualified from Round ${roundIdx + 1} (−${removed} pts)`, 'warn');
+  }
+
+  saveState();
+  updateSidebar();
+  renderResults();
+  /* Refresh championship if it's open */
+  if (document.getElementById('page-championship')?.classList.contains('active'))
+    renderChampionship();
+}
+
+
+/* ─── USER GUIDE ────────────────────────────────────────────── */
+function renderGuide() {
+  const isAdmin = APP.session.role === 'admin';
+  document.getElementById('guide-content').innerHTML = `
+    <div class="guide-wrap">
+
+      <!-- Quick-jump nav -->
+      <div class="guide-jumpnav">
+        ${[
+          ['gs',    '🚀 Quick Start'],
+          ['flow',  '🗓 Race Weekend Flow'],
+          ['assets','📦 Asset Types'],
+          ['csv',   '📄 CSV Format'],
+          ['strat', '🏁 Tyre Strategy'],
+          ['score', '🏆 Scoring'],
+          ['trade', '⇄ Trade Desk'],
+          ['dsq',   '⛔ Disqualification'],
+          ['sync',  '🔗 Live Sync'],
+          ['admin', '⚙ Admin Tools'],
+        ].map(([id, label]) =>
+          `<a class="guide-jump-btn" href="#gs-${id}">${label}</a>`
+        ).join('')}
+      </div>
+
+      <!-- ── QUICK START ── -->
+      <div class="guide-section" id="gs-gs">
+        <div class="guide-section-title">🚀 Quick Start</div>
+        <div class="guide-grid-2">
+          <div class="guide-card">
+            <div class="guide-card-head">Admin / Chair Checklist</div>
+            <ol class="guide-ol">
+              <li>Go to <strong>Assets</strong> → import your CSV (or set up manually)</li>
+              <li>Go to <strong>Teams</strong> → create teams, assign asset slots</li>
+              <li>Go to <strong>Season</strong> → pick circuits, lock the season</li>
+              <li>Go to <strong>Practice</strong> → run one Free Practice session</li>
+              <li>Go to <strong>Qualifying</strong> → choose weather, run qualifying</li>
+              <li>Go to <strong>Strategy</strong> → confirm or override team strategies</li>
+              <li>Go to <strong>Race</strong> → press Lights Out, watch it unfold</li>
+              <li>Go to <strong>Results</strong> → review, apply DSQ if needed</li>
+              <li>Repeat from Step 5 for the next round</li>
+            </ol>
+          </div>
+          <div class="guide-card">
+            <div class="guide-card-head">Delegate Checklist</div>
+            <ol class="guide-ol">
+              <li>Enter your access code (shared by the Chair) or open the Chair's share link</li>
+              <li>Select your team name</li>
+              <li>Go to <strong>Strategy</strong> → choose your tyre compounds before each race</li>
+              <li>Go to <strong>Trade Desk</strong> → propose asset swaps (Chair executes)</li>
+              <li>Watch the race live on the <strong>Race</strong> tab (if the Chair projects it)</li>
+              <li>Check your standings in <strong>Championship</strong> and <strong>Analytics</strong></li>
+            </ol>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── RACE WEEKEND FLOW ── -->
+      <div class="guide-section" id="gs-flow">
+        <div class="guide-section-title">🗓 Race Weekend Flow</div>
+        <div class="guide-flow-steps">
+          ${[
+            ['Free Practice','One session on a balanced reference circuit. Generates a tyre performance report. Soft, Medium, Hard stints are run for every driver. Determines baseline pace gaps between teams.'],
+            ['Qualifying','Single flying lap per driver. Weather is set by the Chair. Track characteristics (overtaking, power dependency, downforce) all influence lap times. Fastest lap = pole position.'],
+            ['Strategy Selection','Before the race, each team picks their compound sequence — e.g. S→M→H (2-stop) or M→H (1-stop). This locks in when the race starts. Your Strategist\'s Tyre Choice rating gives a bonus if your choice matches track conditions.'],
+            ['Race','All drivers race simultaneously. The simulator runs lap by lap. Safety Cars, DNFs, pit stops, position changes, fastest laps — all happen dynamically. Admin controls speed (0.25×/1×/4×) and can skip to end.'],
+            ['Results & Points','Final classification is displayed. Admin can apply DSQ if needed. Points are awarded 25-18-15-12-10-8-6-4-2-1, plus 1 point for fastest lap (top-10 finisher only).'],
+          ].map(([title, desc], i) => `
+            <div class="guide-flow-step">
+              <div class="guide-flow-num">${i + 1}</div>
+              <div>
+                <div class="guide-flow-title">${title}</div>
+                <div class="guide-flow-desc">${desc}</div>
+              </div>
+            </div>`).join('')}
+        </div>
+      </div>
+
+      <!-- ── ASSET TYPES ── -->
+      <div class="guide-section" id="gs-assets">
+        <div class="guide-section-title">📦 Asset Types</div>
+        <div class="guide-grid-2">
+          ${[
+            ['#29b6f6','Engine','Power, Reliability, Deployment, Fuel_Eff, Thermal','The power unit. Power dependency varies per circuit (Monza = 95%, Monaco = 45%). Reliability affects DNF probability.'],
+            ['#e8002d','Team Principal','Strategy, Morale, Budget_Mgmt, Driver_Mgmt','Leadership and culture. Contributes ~7% to car score. High Morale boosts consistency.'],
+            ['#00e676','Driver','Pace, Racecraft, Wet_Weather, Tyre_Mgmt, Consistency, Qualifying','The car is driven by Driver 1 & Driver 2 each race. Reserve only drives if swapped in. Wet_Weather matters when it rains; Tyre_Mgmt matters on high-degradation tracks.'],
+            ['#ffd700','Aero Package','Downforce, Drag, Balance, High_Speed, Street_Circuit','Determines how the car handles different track types. Street circuits favour high Downforce. Power tracks favour low Drag.'],
+            ['#ab47bc','Strategist','Undercut, Overcut, Safety_Car, Tyre_Choice, Pitstop_Timing','Drives strategy decisions. Tyre_Choice gives a pace bonus when the team picks the right strategy for the track. Safety_Car affects SC exploitation.'],
+            ['#ff7043','Pit Crew','Stop_Time, Reliability, Undercut_Exec, Pressure_Handling, Multi_Stop','Determines pit stop duration (21–30 s range). Slow stops can cost podium positions.'],
+            ['#26c6da','Technical Director','Technical_Knowledge, Dev_Speed, Reliability_Focus, Innovation, Setup_Mastery, Race_Engineering','Newly added. When TDs are in the CSV, they become a required 8th slot. Setup_Mastery reduces lap-time variance; Reliability_Focus lowers DNF risk.'],
+          ].map(([color, name, ratings, desc]) => `
+            <div class="guide-asset-card" style="border-left:3px solid ${color}">
+              <div class="guide-asset-name" style="color:${color}">${name}</div>
+              <div class="guide-asset-ratings">Ratings: <em>${ratings}</em></div>
+              <div class="guide-asset-desc">${desc}</div>
+            </div>`).join('')}
+        </div>
+      </div>
+
+      <!-- ── CSV FORMAT ── -->
+      <div class="guide-section" id="gs-csv">
+        <div class="guide-section-title">📄 CSV Import Format</div>
+        <div class="guide-card">
+          <div class="guide-card-head">Column headers (row 1)</div>
+          <div class="guide-code">ID, Name, Nationality, Type, Price, Description, S1, V1, S2, V2, S3, V3, S4, V4, S5, V5, S6, V6</div>
+          <div class="guide-table-wrap">
+            <table class="guide-table">
+              <thead><tr><th>Column</th><th>Example</th><th>Notes</th></tr></thead>
+              <tbody>
+                <tr><td>ID</td><td>ENG_001</td><td>Unique identifier, no spaces</td></tr>
+                <tr><td>Name</td><td>V8 Hybrid Pro</td><td>Display name</td></tr>
+                <tr><td>Nationality</td><td>German</td><td>Optional flavour text</td></tr>
+                <tr><td>Type</td><td>Engine</td><td>Must be one of: Engine, Principal, Driver, Aero, Strategist, PitCrew, TechnicalDirector</td></tr>
+                <tr><td>Price</td><td>45</td><td>Price in $M for auction purposes</td></tr>
+                <tr><td>Description</td><td>High power output</td><td>Optional, shown on asset card</td></tr>
+                <tr><td>S1…S6</td><td>Power</td><td>Rating stat name (e.g. "Pace", "Downforce")</td></tr>
+                <tr><td>V1…V6</td><td>88</td><td>Corresponding rating value (0–100)</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="guide-tip">💡 You can import directly from a Google Sheets URL. In Sheets, go to File → Share → Publish to web → CSV → copy the link.</div>
+        </div>
+      </div>
+
+      <!-- ── TYRE STRATEGY ── -->
+      <div class="guide-section" id="gs-strat">
+        <div class="guide-section-title">🏁 Tyre Strategy</div>
+        <div class="guide-card">
+          <div class="guide-card-head">Strategy presets (dry conditions)</div>
+          <div class="guide-table-wrap">
+            <table class="guide-table">
+              <thead><tr><th>Strategy</th><th>Sequence</th><th>Stops</th><th>Best for</th></tr></thead>
+              <tbody>
+                <tr><td>1-Stop Gamble</td><td>S → H</td><td>1</td><td>Low-deg tracks, undercut opportunities</td></tr>
+                <tr><td>1-Stop Standard</td><td>M → H</td><td>1</td><td>Balanced low-deg tracks; stable and predictable</td></tr>
+                <tr><td>1-Stop Endurance</td><td>H → H</td><td>1</td><td>Ultra-low degradation, maximise track time</td></tr>
+                <tr><td>2-Stop Balanced</td><td>M → M → H</td><td>2</td><td>Medium-deg tracks; flexibility under SC</td></tr>
+                <tr><td>2-Stop Attack</td><td>S → M → H</td><td>2</td><td>High-deg tracks; maximum early pace</td></tr>
+                <tr><td>3-Stop Sprint</td><td>S → S → M → H</td><td>3</td><td>Very high deg, aggressive overcut attempts</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="guide-tip">💡 Your Strategist's <strong>Tyre Choice</strong> rating gives a small pace bonus when you pick a strategy that suits the track degradation level. High-deg track + 2-stop = bonus. Low-deg + 1-stop = bonus.</div>
+        </div>
+      </div>
+
+      <!-- ── SCORING ── -->
+      <div class="guide-section" id="gs-score">
+        <div class="guide-section-title">🏆 Scoring System</div>
+        <div class="guide-grid-2">
+          <div class="guide-card">
+            <div class="guide-card-head">Points Table</div>
+            <div class="guide-table-wrap">
+              <table class="guide-table">
+                <thead><tr><th>Position</th><th>Points</th></tr></thead>
+                <tbody>
+                  ${POINTS_SYS.map((p,i) => `<tr><td>P${i+1}</td><td>${p}</td></tr>`).join('')}
+                  <tr style="border-top:1px solid var(--border-2)"><td>Fastest Lap (top 10)</td><td>+1</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="guide-card">
+            <div class="guide-card-head">How constructor points work</div>
+            <p class="text-sm" style="line-height:1.7">
+              Each team has <strong>two race drivers</strong>. Their points are summed to
+              form the constructor total. The reserve driver's points count too if they
+              race (after a swap).
+              <br><br>
+              <strong>DSQ</strong> removes all points earned in that race from both
+              the driver and constructor standings.
+              <br><br>
+              <strong>DNF</strong> scores 0 points but does not affect future races.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── TRADE DESK ── -->
+      <div class="guide-section" id="gs-trade">
+        <div class="guide-section-title">⇄ Trade Desk</div>
+        <div class="guide-card">
+          <div class="guide-card-head">Rules</div>
+          <ul class="guide-ul">
+            <li><strong>Only the Admin / Chair can execute a trade.</strong> Delegates can browse assets and signal their intentions, but the Chair must press Execute.</li>
+            <li>Trades must be <em>like-for-like</em> by slot type: drivers swap with drivers, engines with engines, etc.</li>
+            <li>You can swap reserve drivers in a driver trade — driver1, driver2, and reserve are all pooled as "driver" type.</li>
+            <li>Multiple assets can be included in a single trade (e.g. engine + driver for engine + driver).</li>
+            <li>Once a trade is executed, championship points are <em>not</em> retroactively adjusted — only future race points change.</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- ── DISQUALIFICATION ── -->
+      <div class="guide-section" id="gs-dsq">
+        <div class="guide-section-title">⛔ Driver Disqualification</div>
+        <div class="guide-card">
+          <div class="guide-card-head">How to disqualify a driver</div>
+          <ol class="guide-ol">
+            <li>Go to the <strong>Results</strong> tab after a race is complete.</li>
+            <li>Select the relevant round from the dropdown.</li>
+            <li>Find the driver in the Final Classification.</li>
+            <li>Click <span style="color:var(--accent)">⛔ DSQ</span> next to their name — a confirmation modal appears.</li>
+            <li>The driver's points are set to 0 and removed from the championship.</li>
+          </ol>
+          <div class="guide-tip">💡 To reverse a DSQ, click <span style="color:var(--green)">↩ Un-DSQ</span> next to the same driver — their original points are fully restored.</div>
+          <div class="guide-note">Note: Only finished drivers (non-DNF) can be DSQ'd. DNF drivers score 0 by default.</div>
+        </div>
+      </div>
+
+      <!-- ── LIVE SYNC ── -->
+      <div class="guide-section" id="gs-sync">
+        <div class="guide-section-title">🔗 Live Sync — Setup & Usage</div>
+        <div class="guide-card mb-16">
+          <div class="guide-card-head">Option A — Share Link (zero setup, recommended)</div>
+          <p class="text-sm" style="margin-bottom:12px;line-height:1.7">
+            The entire session state is compressed into a URL. Anyone who opens it
+            gets an exact copy of the current state — no account or download needed.
+          </p>
+          <ol class="guide-ol">
+            <li>Go to <strong>Admin → Live Sync → Option A</strong></li>
+            <li>Click <strong>⚡ Generate Link</strong></li>
+            <li>Copy the link (or scan the QR code)</li>
+            <li>Share via WhatsApp, Discord, Telegram, email, etc.</li>
+            <li>Delegates open the link → state loads automatically → they log in as normal</li>
+            <li>After each race, regenerate and reshare to push updates</li>
+          </ol>
+          <div class="guide-tip">💡 The link encodes everything except per-lap FP timing arrays and race event logs (stripped to keep the URL short). All standings, team assets, and results are included.</div>
+        </div>
+
+        <div class="guide-card mb-16">
+          <div class="guide-card-head">Option A Alternative — Delegates Join Manually</div>
+          <ol class="guide-ol">
+            <li>On the login screen, click <strong>🔗 Join Live Session</strong></li>
+            <li>Paste the share link or the session ID provided by the Chair</li>
+            <li>Click <strong>⚡ Sync & Enter</strong></li>
+            <li>Select your team and enter your access code</li>
+          </ol>
+        </div>
+
+        <div class="guide-card mb-16">
+          <div class="guide-card-head">Option B — Live Session (pull-on-demand)</div>
+          <p class="text-sm" style="margin-bottom:12px;line-height:1.7">
+            Creates a persistent storage slot on a free public server (JSONBlob).
+            Delegates can pull the latest state any time without waiting for the Chair
+            to reshare a link. Requires one network request per pull.
+          </p>
+          <ol class="guide-ol">
+            <li>Admin clicks <strong>▶ Create Live Session</strong></li>
+            <li>A Session ID appears — share it with all delegates (or show the QR code)</li>
+            <li>Delegates enter the Session ID on the login screen (🔗 Join Live Session)</li>
+            <li>After each race, Admin clicks <strong>📤 Push Update Now</strong></li>
+            <li>Delegates click <strong>🔗 Join Live Session</strong> again on the login screen to pull the latest state</li>
+          </ol>
+          <div class="guide-tip">💡 Enable <strong>Auto-push after each race</strong> in the sync panel so delegates are updated automatically every time a race finishes.</div>
+          <div class="guide-note">⚠ If the "Create Session" button shows an error, the JSONBlob API may be temporarily unavailable. Use Option A (Share Link) as a reliable fallback.</div>
+        </div>
+
+        <div class="guide-card">
+          <div class="guide-card-head">Troubleshooting</div>
+          <div class="guide-table-wrap">
+            <table class="guide-table">
+              <thead><tr><th>Problem</th><th>Fix</th></tr></thead>
+              <tbody>
+                <tr><td>"Could not generate link" error</td><td>Refresh the page. LZ-String CDN may not have loaded. Check internet connection.</td></tr>
+                <tr><td>Link works but no data loads</td><td>The share URL may be truncated by the messaging app. Use the QR code or copy-paste carefully.</td></tr>
+                <tr><td>"Create Session" fails</td><td>JSONBlob API may be down. Use Share Link (Option A) instead.</td></tr>
+                <tr><td>Delegate sees old data after sync</td><td>Admin must click 📤 Push Update first. Delegates then re-enter the session ID.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── ADMIN TOOLS ── -->
+      <div class="guide-section" id="gs-admin">
+        <div class="guide-section-title">⚙ Admin Tools Reference</div>
+        <div class="guide-card">
+          <div class="guide-table-wrap">
+            <table class="guide-table">
+              <thead><tr><th>Action</th><th>Where</th><th>What it does</th></tr></thead>
+              <tbody>
+                <tr><td>Set passwords</td><td>Admin → Authentication</td><td>Change admin PW, shared delegate PW, or per-team PW</td></tr>
+                <tr><td>Swap drivers</td><td>Admin → Teams → Swap Drivers</td><td>Re-assign driver slots within a team; points stay with slot</td></tr>
+                <tr><td>Activate reserve</td><td>Admin → Teams → Activate Reserve</td><td>Promote reserve into a race seat; displaced driver becomes reserve</td></tr>
+                <tr><td>Reset Free Practice</td><td>Admin → Danger Zone</td><td>Clears FP data; allows re-run</td></tr>
+                <tr><td>Reset Season Progress</td><td>Admin → Danger Zone</td><td>Clears results, qualifying, standings — keeps teams and assets</td></tr>
+                <tr><td>Reset Everything</td><td>Admin → Danger Zone</td><td>Wipes all data and reloads. Irreversible.</td></tr>
+                <tr><td>Export Package</td><td>Admin → Distribution</td><td>Bundles the app + current state into a standalone HTML file</td></tr>
+                <tr><td>Export State JSON</td><td>Admin → Distribution</td><td>Downloads a JSON snapshot you can re-import later</td></tr>
+                <tr><td>Import State JSON</td><td>Admin → Distribution</td><td>Replaces current data with an imported JSON snapshot</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /.guide-wrap -->
+  `;
+}
+/* ─── END OF REFINEMENT PATCH ───────────────────────────────── */
