@@ -14,19 +14,15 @@
     rel="stylesheet"
   />
 
-  <!-- LZ-String: needed for URL-based state share (no download required) -->
+  <!-- LZ-String for compressed URL share -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.4.4/lz-string.min.js"></script>
 
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
 
   <!-- ════════════════════════════════════════════════════════════
-       LOGIN SCREEN
-       Three panels:
-         1. #login-pw-section      — password entry (default)
-         2. #login-team-section    — team picker (after delegate pw)
-         3. #login-sync-section    — join live session (no download)
+       LOGIN SCREEN (Admin / EB only)
   ════════════════════════════════════════════════════════════ -->
   <section id="screen-login" class="screen-login">
     <div class="login-bg-grid"  aria-hidden="true"></div>
@@ -34,11 +30,10 @@
 
     <div class="login-card" id="login-card">
       <div class="login-logo">F1 MUN</div>
-      <div class="login-subtitle">Race Control System</div>
+      <div class="login-subtitle">Executive Board Console</div>
 
-      <!-- ── Panel 1: Password entry ──────────────────────────── -->
       <div id="login-pw-section">
-        <label class="login-label" for="login-pw">Access Code</label>
+        <label class="login-label" for="login-pw">Admin Access Code</label>
         <input
           type="password"
           id="login-pw"
@@ -47,64 +42,23 @@
           autocomplete="off"
         />
         <button class="login-btn" id="login-submit-btn">Enter Race Control</button>
-        <div class="login-hint">Admin or Delegate access code required</div>
+        <div class="login-hint">Executive Board / Chair access</div>
         <div class="login-error" id="login-error">Invalid access code</div>
 
-        <!-- Live-session shortcut (digital sync, zero downloads) -->
-        <div class="login-sync-row">
-          <span class="login-sync-label">Already have a session link?</span>
-          <button class="btn btn-ghost btn-sm" id="login-sync-btn">🔗 Join Live Session</button>
+        <div class="login-spectator-note">
+          📺 <strong>Delegates:</strong> open the Spectator Link your EB shared with you — no login required.
         </div>
-      </div>
-
-      <!-- ── Panel 2: Team picker ──────────────────────────────── -->
-      <div id="login-team-section" hidden>
-        <div class="login-label">Select Your Team</div>
-        <div class="team-select-grid" id="team-select-grid"></div>
-        <div class="login-divider">
-          <span class="login-divider-line"></span>
-          <span class="login-divider-text">or</span>
-          <span class="login-divider-line"></span>
-        </div>
-        <button class="btn btn-ghost btn-full" id="login-back-btn">← Back to login</button>
-      </div>
-
-      <!-- ── Panel 3: Join live session (no file download needed) ─ -->
-      <div id="login-sync-section" hidden>
-        <div class="login-label">Live Session ID</div>
-        <div class="login-sync-hint">
-          The admin/chair will share a Session ID or QR code. Paste it below to
-          pull the latest state directly — no file download required.
-        </div>
-        <input
-          type="text"
-          id="login-session-id"
-          class="login-input login-input-sm"
-          placeholder="Paste session ID here…"
-          autocomplete="off"
-          spellcheck="false"
-        />
-        <button class="login-btn login-btn-blue" id="login-sync-submit-btn">
-          ⚡ Sync &amp; Enter
-        </button>
-        <div class="login-error" id="login-sync-error">Could not connect to session</div>
-        <div class="login-divider">
-          <span class="login-divider-line"></span>
-          <span class="login-divider-text">or</span>
-          <span class="login-divider-line"></span>
-        </div>
-        <button class="btn btn-ghost btn-full" id="login-sync-back-btn">← Back to login</button>
       </div>
     </div>
   </section>
 
 
   <!-- ════════════════════════════════════════════════════════════
-       MAIN APP
+       MAIN APP (Admin)
   ════════════════════════════════════════════════════════════ -->
   <div id="screen-app" class="screen-app" hidden>
 
-    <!-- TOP NAV ─────────────────────────────────────────────── -->
+    <!-- TOP NAV -->
     <nav class="topnav">
       <div class="nav-logo">F1 MUN</div>
       <div class="nav-tabs-scroll" id="nav-tabs"></div>
@@ -115,10 +69,9 @@
       </div>
     </nav>
 
-    <!-- BODY: sidebar + main ────────────────────────────────── -->
     <div class="app-body">
 
-      <!-- SIDEBAR ─────────────────────────────────────────── -->
+      <!-- SIDEBAR -->
       <aside class="sidebar">
         <div class="sb-section-title">Constructors</div>
         <div id="lb-constructors"></div>
@@ -126,10 +79,9 @@
         <div id="lb-history"></div>
       </aside>
 
-      <!-- MAIN CONTENT ─────────────────────────────────────── -->
+      <!-- MAIN CONTENT -->
       <main class="main-content">
 
-        <!-- ── DASHBOARD ────────────────────────────────────── -->
         <section id="page-dashboard" class="page">
           <header class="page-header">
             <h1 class="page-title">Dashboard</h1>
@@ -138,14 +90,12 @@
           <div id="dashboard-content"></div>
         </section>
 
-        <!-- ── ASSETS (admin) ───────────────────────────────── -->
         <section id="page-assets" class="page">
           <header class="page-header">
             <h1 class="page-title">Asset Registry</h1>
             <p class="page-sub">
-              All available assets — Engines, Principals, Drivers, Aero Packages,
-              Strategists, Pit Crews, and <strong>Technical Directors</strong>.
-              Set prices before the auction begins.
+              Engines, Principals, Drivers, Strategists, Pit Crews, and Technical Directors.
+              <em>Aero is now a per-race strategic choice — no longer auctioned.</em>
             </p>
           </header>
 
@@ -173,13 +123,12 @@
           <div id="asset-grid" class="grid-auto"></div>
         </section>
 
-        <!-- ── TEAMS (admin) ────────────────────────────────── -->
         <section id="page-teams" class="page">
           <header class="page-header">
             <h1 class="page-title">Team Management</h1>
             <p class="page-sub">
-              Create teams, assign all eight asset slots (including Technical Director),
-              and manage driver lineups.
+              Create teams and assign asset slots: Engine, Principal, 2× Driver + Reserve,
+              Strategist, Pit Crew, Technical Director.
             </p>
           </header>
 
@@ -191,7 +140,6 @@
                 <label for="new-team-color">Color</label>
                 <input type="color"  id="new-team-color"  value="#e8002d" />
               </div>
-              <input type="password" id="new-team-pw"    placeholder="Team password (optional)" />
               <button class="btn btn-red" id="create-team-btn">+ New Team</button>
             </div>
           </div>
@@ -199,13 +147,12 @@
           <div id="teams-grid" class="grid-2"></div>
         </section>
 
-        <!-- ── SEASON SETUP (admin) ──────────────────────────── -->
         <section id="page-season" class="page">
           <header class="page-header">
             <h1 class="page-title">Season Calendar</h1>
             <p class="page-sub">
-              Configure the race calendar, set championship name, and lock in
-              the season structure. Strategies are set per-round after lock.
+              Configure the race calendar, set championship name, and lock the season.
+              Strategies and aero packages are set per-round after lock.
             </p>
           </header>
 
@@ -223,7 +170,7 @@
                 </div>
                 <div class="form-field">
                   <label for="season-rounds">Number of Races</label>
-                  <input type="number" id="season-rounds" value="5" min="1" max="15" />
+                  <input type="number" id="season-rounds" value="5" min="1" max="24" />
                 </div>
                 <div class="season-actions">
                   <button class="btn btn-red btn-full" id="lock-season-btn">
@@ -248,26 +195,18 @@
           </div>
         </section>
 
-        <!-- ── TYRE STRATEGY (admin + delegates) ────────────── -->
-        <!--
-          Visible to ALL logged-in users.
-          Delegates can set their own team's strategy.
-          Admin can set / override strategies for all teams.
-          Strategies lock the moment the race starts.
-        -->
         <section id="page-strategy" class="page">
           <header class="page-header">
-            <h1 class="page-title">Tyre Strategy</h1>
+            <h1 class="page-title">Race Strategy</h1>
             <p class="page-sub">
-              Choose your compound plan for each round before the race begins.
-              Your strategist's <em>Tyre Choice</em> rating unlocks a performance
-              bonus when the strategy matches track conditions. Locks on Race Start.
+              Set the <strong>Aero Package</strong> and <strong>Tyre Strategy</strong> for each
+              team per round. The right choices for the track give real performance gains;
+              wrong choices cost real lap-time. Locks at race start.
             </p>
           </header>
           <div id="strategy-content"></div>
         </section>
 
-        <!-- ── FREE PRACTICE (admin) ─────────────────────────── -->
         <section id="page-fp" class="page">
           <header class="page-header">
             <h1 class="page-title">Free Practice Session</h1>
@@ -279,7 +218,6 @@
           <div id="fp-content"></div>
         </section>
 
-        <!-- ── QUALIFYING (admin) ────────────────────────────── -->
         <section id="page-qualifying" class="page">
           <header class="page-header">
             <h1 class="page-title">Qualifying — Single Lap Shootout</h1>
@@ -288,19 +226,17 @@
           <div id="qualifying-content"></div>
         </section>
 
-        <!-- ── RACE CONTROL (admin) ──────────────────────────── -->
         <section id="page-race" class="page">
           <header class="page-header">
             <h1 class="page-title">Race Control</h1>
             <p class="page-sub">
-              Live race simulation. Team strategies, Technical Director setups,
-              and safety-car events all factor in.
+              Live race simulation. Aero, tyre strategy, TD setup, and chance events
+              all factor in. Watch the underdog story unfold.
             </p>
           </header>
           <div id="race-content"></div>
         </section>
 
-        <!-- ── RESULTS ───────────────────────────────────────── -->
         <section id="page-results" class="page">
           <header class="page-header">
             <h1 class="page-title">Race Results</h1>
@@ -309,7 +245,6 @@
           <div id="results-content"></div>
         </section>
 
-        <!-- ── CHAMPIONSHIP ──────────────────────────────────── -->
         <section id="page-championship" class="page">
           <header class="page-header">
             <h1 class="page-title">Championship Standings</h1>
@@ -318,77 +253,66 @@
           <div id="championship-content"></div>
         </section>
 
-        <!-- ── ANALYTICS ─────────────────────────────────────── -->
         <section id="page-analytics" class="page">
           <header class="page-header">
             <h1 class="page-title">Team Analytics</h1>
             <p class="page-sub">
-              Full race data, asset performance metrics (including Technical Director
-              contribution), and strategic intelligence.
+              Full race data, asset performance metrics including Technical Director
+              contribution and strategic decision history.
             </p>
           </header>
           <div id="analytics-content"></div>
         </section>
 
-        <!-- ── TRADE DESK ─────────────────────────────────────── -->
-        <!--
-          Delegates can VIEW proposed trades and mark agreement.
-          Only the Admin / Chair can EXECUTE a trade.
-          This prevents unauthorised asset swaps.
-        -->
         <section id="page-trade" class="page">
           <header class="page-header">
             <h1 class="page-title">Trade Desk</h1>
             <p class="page-sub">
-              Propose and review asset trades between teams.
-              <strong>Execution requires Admin / Chair confirmation</strong> —
-              delegates can select assets and signal readiness, but the chair
-              presses the final Execute button.
+              Execute asset trades between teams (admin only). Like-for-like slot matching.
             </p>
           </header>
-
-          <!-- Admin-only execution banner shown to delegates -->
-          <div id="trade-admin-banner" class="trade-admin-banner" hidden>
-            <span class="trade-banner-icon">🔐</span>
-            <div>
-              <div class="trade-banner-title">Admin Authorisation Required</div>
-              <div class="trade-banner-sub">
-                Select the assets you wish to offer, then ask the Chair to execute
-                the trade on your behalf.
-              </div>
-            </div>
-          </div>
-
           <div id="trade-content"></div>
         </section>
 
-        <!-- ── ADMIN PANEL ────────────────────────────────────── -->
         <section id="page-admin" class="page">
           <header class="page-header">
             <h1 class="page-title">Admin Panel</h1>
             <p class="page-sub">
-              Password management, season reset, driver swaps, live session sync
-              (share state digitally — no file downloads needed), and package export.
+              Password management, season reset, driver swaps, spectator link generation,
+              and package export.
             </p>
           </header>
           <div id="admin-content"></div>
         </section>
 
-        <!-- ── GUIDE ─────────────────────────────────────────── -->
         <section id="page-guide" class="page">
           <header class="page-header">
             <h1 class="page-title">User Guide</h1>
             <p class="page-sub">
-              Complete reference for the F1 MUN Race Control System — setup, race weekends,
-              scoring, trading, live sync, and everything in between.
+              Complete reference for the F1 MUN Race Control System.
             </p>
           </header>
           <div id="guide-content"></div>
         </section>
 
-      </main><!-- /.main-content -->
-    </div><!-- /.app-body -->
-  </div><!-- /#screen-app -->
+      </main>
+    </div>
+  </div>
+
+
+  <!-- ════════════════════════════════════════════════════════════
+       SPECTATOR VIEW (Read-only, accessed via shared URL)
+  ════════════════════════════════════════════════════════════ -->
+  <div id="screen-spectator" class="screen-spectator" hidden>
+    <nav class="spec-topnav">
+      <div class="spec-logo">F1 MUN <span class="spec-pill">SPECTATOR</span></div>
+      <div class="spec-tabs-scroll" id="spec-tabs"></div>
+      <div class="spec-meta">
+        <span id="spec-updated" class="spec-updated"></span>
+      </div>
+    </nav>
+    <main class="spec-main" id="spec-main"></main>
+  </div>
 
 
   <!-- ════════════════════════════════════════════════════════════
@@ -404,72 +328,35 @@
 
 
   <!-- ════════════════════════════════════════════════════════════
-       RACE WINNER POPUP
-       Shown after every race (except the final race, which gets
-       the champion popup instead).  Includes confetti canvas.
+       CRISIS MODAL (between-race driver injury announcement)
   ════════════════════════════════════════════════════════════ -->
+  <div id="crisis-popup" class="crisis-popup" hidden aria-live="assertive">
+    <div class="crisis-card" id="crisis-card"></div>
+  </div>
+
+
+  <!-- RACE WINNER POPUP -->
   <div id="win-popup" class="win-popup" hidden aria-live="assertive">
-    <!-- Confetti particles injected here by JS -->
     <div class="win-confetti-container" id="win-confetti" aria-hidden="true"></div>
-
-    <div class="win-card" id="win-card">
-      <!--
-        Dynamically populated by showRaceWinnerPopup().
-        Contains: track name, P1/P2/P3 podium, fastest lap, close button.
-      -->
-    </div>
+    <div class="win-card" id="win-card"></div>
   </div>
 
 
-  <!-- ════════════════════════════════════════════════════════════
-       SEASON CHAMPION POPUP
-       Triggered only after the FINAL race of the season.
-       Grand celebration: fireworks, trophy, full WDC + WCC display.
-  ════════════════════════════════════════════════════════════ -->
+  <!-- SEASON CHAMPION POPUP -->
   <div id="champion-popup" class="champion-popup" hidden aria-live="assertive">
-    <!-- Fireworks / confetti injected here by JS -->
     <div class="champion-fireworks" id="champion-fireworks" aria-hidden="true"></div>
-
-    <!-- Stars layer (pure CSS, no JS needed) -->
     <div class="champion-stars" aria-hidden="true">
-      <div class="star s1"></div>
-      <div class="star s2"></div>
-      <div class="star s3"></div>
-      <div class="star s4"></div>
-      <div class="star s5"></div>
-      <div class="star s6"></div>
-      <div class="star s7"></div>
-      <div class="star s8"></div>
+      <div class="star s1"></div><div class="star s2"></div><div class="star s3"></div>
+      <div class="star s4"></div><div class="star s5"></div><div class="star s6"></div>
+      <div class="star s7"></div><div class="star s8"></div>
     </div>
-
-    <div class="champion-card" id="champion-card">
-      <!--
-        Dynamically populated by showSeasonChampionPopup().
-        Contains: "World Champion" heading, WDC name + team, WCC name,
-        full standings, close button.
-      -->
-    </div>
+    <div class="champion-card" id="champion-card"></div>
   </div>
 
 
-  <!-- ════════════════════════════════════════════════════════════
-       PRINT VIEW  (populated for PDF exports, hidden on screen)
-  ════════════════════════════════════════════════════════════ -->
   <div id="print-view" class="print-view"></div>
-
-
-  <!-- ════════════════════════════════════════════════════════════
-       NOTIFICATION TOAST CONTAINER
-  ════════════════════════════════════════════════════════════ -->
   <div id="notif-container" class="notif-container" aria-live="polite"></div>
 
-
-  <!-- ════════════════════════════════════════════════════════════
-       SCRIPTS
-       LZ-String must already be loaded (sync <script> above).
-       app.js is deferred so the DOM is ready when it runs.
-  ════════════════════════════════════════════════════════════ -->
   <script src="app.js" defer></script>
-
 </body>
 </html>
