@@ -2489,6 +2489,7 @@ function renderAdmin() {
     <div class="admin-section">
       <div class="admin-section-title">Distribution (file-based backup)</div>
       <div class="flex gap-12 flex-wrap">
+        <button class="btn btn-ghost" id="export-pdf-btn">📄 Export Analytics PDF</button>
         <button class="btn btn-ghost" id="export-state-btn">⬇ Download State (JSON)</button>
         <label class="btn btn-ghost file-label">⬆ Import State (JSON)
           <input type="file" accept=".json" id="import-state-input" hidden />
@@ -2541,6 +2542,7 @@ function renderAdmin() {
     window.open(inp.value, '_blank');
   });
 
+  document.getElementById('export-pdf-btn').addEventListener('click', generatePDF);
   document.getElementById('export-state-btn').addEventListener('click', exportStateJSON);
   document.getElementById('import-state-input').addEventListener('change', e => {
     if (e.target.files[0]) importStateJSON(e.target.files[0]);
@@ -2747,6 +2749,185 @@ function exportStateJSON() {
   URL.revokeObjectURL(url);
   notify('State exported', 'success');
 }
+
+function generatePDF() {
+  const pv = document.getElementById('print-view');
+  if (!pv) { notify('Print view not found','error'); return; }
+  const completed = APP.season.calendar.filter(r => r.completed);
+  const drivers      = Object.entries(APP.champ.drivers).sort((a,b) => b[1].points - a[1].points);
+  const constructors = Object.entries(APP.champ.constructors).sort((a,b) => b[1].points - a[1].points);
+  const hasTDs = ASSET_DB.technicalDirectors.length > 0;
+  const now   = new Date().toLocaleString();
+  const header = `
+    <div class="print-header">
+      <div class="print-logo">F1 MUN</div>
+      <div style="text-align:right;font-size:11px;color:#555">
+        ${escHtml(APP.season.name)}<br>Round ${APP.season.currentRound}/${APP.season.calendar.length} · ${now}
+      </div>
+    </div>`;
+
+  /* ── PAGE 1: Championship Standings ── */
+  const conRows = constructors.map(([id,c],i) => `<tr>
+    <td>${i+1}</td><td style="color:${c.color};font-weight:700">${escHtml(c.name)}</td>
+    <td>${c.wins||0}</td><td>${c.podiums||0}</td><td><strong>${c.points}</strong></td>
+  </tr>`).join('');
+  const drvRows = drivers.map(([k,d],i) => `<tr>
+    <td>${i+1}</td><td>${escHtml(d.name)}</td><td>${escHtml(d.teamName)}</td>
+    <td>${d.wins||0}</td><td>${d.podiums||0}</td><td>${d.poles||0}</td>
+    <td>${d.fl||0}</td><td style="color:#e8002d">${d.dnfs||0}</td>
+    <td><strong>${d.points}</strong></td>
+  </tr>`).join('');
+  const matrixHeader = completed.map((r,i) => {
+    const t = TRACKS.find(x => x.id === r.trackId);
+    return `<th>${t?.flag||''} R${i+1}</th>`;
+  }).join('');
+  const matrixRows = drivers.map(([k,d]) => {
+    const cells = completed.map((r,i) => {
+      const h = (d.history||[]).find(x => x.round === APP.season.calendar.indexOf(r)+1);
+      if (!h) return '<td>—</td>';
+      if (h.dnf) return '<td style="color:#e8002d">DNF</td>';
+      return `<td>P${h.finishPos}<br><small>+${h.points}</small></td>`;
+    }).join('');
+    return `<tr><td style="font-weight:600">${escHtml(d.name)}</td>${cells}<td><strong>${d.points}</strong></td></tr>`;
+  }).join('');
+  const page1 = `
+    <div class="print-page">
+      ${header}
+      <div class="print-title">Championship Standings</div>
+      <div class="print-grid-2">
+        <div class="print-section">
+          <div class="print-section-title">Constructors</div>
+          <table class="print-table">
+            <thead><tr><th>#</th><th>Team</th><th>W</th><th>Pod</th><th>Pts</th></tr></thead>
+            <tbody>${conRows||'<tr><td colspan="5">No data yet</td></tr>'}</tbody>
+          </table>
+        </div>
+        <div class="print-section">
+          <div class="print-section-title">Drivers</div>
+          <table class="print-table">
+            <thead><tr><th>#</th><th>Driver</th><th>Team</th><th>W</th><th>Pod</th><th>Pole</th><th>FL</th><th>DNF</th><th>Pts</th></tr></thead>
+            <tbody>${drvRows||'<tr><td colspan="9">No data yet</td></tr>'}</tbody>
+          </table>
+        </div>
+      </div>
+      ${completed.length ? `<div class="print-section" style="margin-top:18px">
+        <div class="print-section-title">Race-by-Race Matrix</div>
+        <table class="print-table">
+          <thead><tr><th>Driver</th>${matrixHeader}<th>Total</th></tr></thead>
+          <tbody>${matrixRows}</tbody>
+        </table>
+      </div>` : ''}
+    </div>`;
+
+  /* ── PAGE PER RACE: Full Classification ── */
+  const racePages = completed.map((round, ri) => {
+    const track   = TRACKS.find(t => t.id === round.trackId);
+    const weather = WEATHER_OPTIONS.find(w => w.id === round.weatherId);
+    const cls     = round.raceResults.classification;
+    const crisis  = APP.season.roundCrises?.[ri];
+    const crisisNote = crisis?.injured?.length
+      ? `<div style="margin-bottom:10px;padding:8px 10px;background:#fff0f0;border-left:3px solid #e8002d;font-size:11px">
+           🚨 ${escHtml(crisis.headline)} — ${crisis.injured.map(i => escHtml(i.driverName)).join(' & ')} missed this race.
+         </div>` : '';
+    const rows = cls.map(c => {
+      const badges = [c.dsq&&'DSQ',c.isFL&&'FL⚡',c.dnf&&'DNF',c.reserve&&'RES'].filter(Boolean).join(' ');
+      return `<tr ${c.dsq?'style="text-decoration:line-through;opacity:.5"':''}>
+        <td style="font-weight:700">${c.dnf?'DNF':(c.dsq?'DSQ':c.position)}</td>
+        <td style="color:${c.teamColor};font-weight:600">${escHtml(c.driverName)}</td>
+        <td>${escHtml(c.teamName)}</td>
+        <td>${c.startPos}</td>
+        <td style="font-family:monospace">${c.dnf?'—':fmtTime(c.totalTime)}</td>
+        <td style="font-family:monospace">${c.dnf?'—':fmtTime(c.fastestLap)}</td>
+        <td>${(c.pitStops||[]).length}</td>
+        <td>${escHtml(c.aeroFit||'—')}</td>
+        <td>${escHtml(c.stratFit||'—')}</td>
+        <td style="font-size:10px;color:#888">${badges||'—'}</td>
+        <td style="font-weight:700;color:#b8860b">${c.dsq?0:(c.points||0)}</td>
+      </tr>`;
+    }).join('');
+    const scNote = round.raceResults.scTriggers ? ` · ${round.raceResults.scTriggers} SC` : '';
+    const flCar  = round.raceResults.flCar ? getAsset(round.raceResults.flCar.driverId)?.name : null;
+    const bestPit= round.raceResults.bestPit ? getAsset(round.raceResults.bestPit.driverId)?.name : null;
+    return `<div class="print-page">
+      ${header}
+      <div class="print-title">R${ri+1} — ${track?.flag||''} ${escHtml(track?.name||'')} Grand Prix</div>
+      <div class="print-subtitle">${weather?.label||''} · ${track?.laps||0} laps${scNote}</div>
+      ${crisisNote}
+      <table class="print-table">
+        <thead><tr>
+          <th>Pos</th><th>Driver</th><th>Team</th><th>Grid</th>
+          <th>Race Time</th><th>Fastest Lap</th><th>Stops</th>
+          <th>Aero Fit</th><th>Strat Fit</th><th>Notes</th><th>Pts</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <div style="margin-top:12px;font-size:11px;color:#555;display:flex;gap:20px">
+        ${flCar   ? `<span>⚡ Fastest Lap: <strong>${escHtml(flCar)}</strong> — ${fmtTime(round.raceResults.flCar.time)}</span>` : ''}
+        ${bestPit ? `<span>🔧 Best Pit: <strong>${escHtml(bestPit)}</strong> — ${round.raceResults.bestPit.time.toFixed(2)}s (L${round.raceResults.bestPit.lap})</span>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+
+  /* ── PAGE PER TEAM: Full Asset + Race History ── */
+  const teamPages = APP.teams.filter(teamComplete).map(team => {
+    const conData = APP.champ.constructors[team.id];
+    const slots   = [
+      ['engine','Engine'],['principal','Principal'],
+      ['driver1','Driver 1'],['driver2','Driver 2'],['reserve','Reserve'],
+      ['strategist','Strategist'],['pitcrew','Pit Crew'],
+      ...(hasTDs ? [['techDir','Tech Director']] : []),
+    ];
+    const assetRows = slots.map(([slot,label]) => {
+      const a = getAsset(team.assets[slot]);
+      if (!a) return `<tr><td>${label}</td><td colspan="3" style="color:#aaa">— empty —</td></tr>`;
+      const ratings = Object.entries(a.ratings).map(([k,v]) => `${k.replace(/_/g,' ')}: <strong>${v}</strong>`).join(' · ');
+      return `<tr>
+        <td>${label}</td>
+        <td style="font-weight:600">${escHtml(a.name)}</td>
+        <td style="font-family:monospace;font-weight:700">${ovr(a)}</td>
+        <td style="font-size:10px;color:#555">${ratings}</td>
+      </tr>`;
+    }).join('');
+    const histRows = completed.map((round,i) => {
+      const t = TRACKS.find(x => x.id === round.trackId);
+      return round.raceResults.classification.filter(c => c.teamId === team.id).map(c =>
+        `<tr>
+          <td>R${i+1}</td>
+          <td>${t?.flag||''} ${escHtml(t?.name||'')}</td>
+          <td>${escHtml(c.driverName)}${c.reserve?' [RES]':''}</td>
+          <td>P${c.startPos}</td>
+          <td style="font-weight:600">${c.dnf?'DNF':'P'+c.position}</td>
+          <td>${escHtml(c.aeroFit||'—')}</td>
+          <td>${escHtml(c.stratFit||'—')}</td>
+          <td style="font-weight:700;color:#b8860b">${c.points||0}</td>
+        </tr>`).join('');
+    }).join('');
+    return `<div class="print-page">
+      ${header}
+      <div class="print-title" style="color:${team.color}">${escHtml(team.name)}</div>
+      <div class="print-subtitle">OVR ${teamOvr(team)||'—'} · $${teamSpent(team)}M · ${conData?.points||0} pts · ${conData?.wins||0} wins · ${conData?.podiums||0} podiums</div>
+      <div class="print-section">
+        <div class="print-section-title">Asset Roster</div>
+        <table class="print-table">
+          <thead><tr><th>Slot</th><th>Name</th><th>OVR</th><th>Ratings Breakdown</th></tr></thead>
+          <tbody>${assetRows}</tbody>
+        </table>
+      </div>
+      ${completed.length ? `<div class="print-section" style="margin-top:16px">
+        <div class="print-section-title">Race-by-Race History</div>
+        <table class="print-table">
+          <thead><tr><th>Rnd</th><th>Circuit</th><th>Driver</th><th>Grid</th><th>Finish</th><th>Aero Fit</th><th>Strat Fit</th><th>Pts</th></tr></thead>
+          <tbody>${histRows||'<tr><td colspan="8">No races yet</td></tr>'}</tbody>
+        </table>
+      </div>` : ''}
+    </div>`;
+  }).join('');
+
+  pv.innerHTML = page1 + racePages + teamPages;
+  notify('📄 Opening print dialog — use "Save as PDF" in your browser', 'info');
+  setTimeout(() => window.print(), 350);
+}
+
 function importStateJSON(file) {
   if (!file) return;
   const reader = new FileReader();
