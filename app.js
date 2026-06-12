@@ -119,7 +119,7 @@ let ASSET_DB = {
 };
 
 const APP = {
-  auth: { adminPw:'ADMIN2025' },
+  auth: { adminPw:'NAHIMILEGA' },
   session: { role:null },
   season: {
     name: 'F1 MUN Grand Prix Championship',
